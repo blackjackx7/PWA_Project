@@ -3,14 +3,21 @@
 //   1. 換掉 Tailwind CDN（改用預先建好的 tailwind.css）、Font Awesome 與 Chart.js 改用自己放的檔案
 //   2. 加上 manifest / apple 相關 meta 與 service worker 註冊
 //   3. 重建 tailwind.css，並更新 sw.js 的 BUILD 版本號（內容有變才會讓手機換新快取）
-// 用法：node scripts/sync.js [來源 HTML 路徑]
+// 用法：node scripts/sync.js [應用名稱，預設 stock] [來源 HTML 路徑]
+// 新增 PWA：在下面 APPS 加一行（來源 HTML 路徑相對於本 repo 根目錄），並建立同名資料夾放 icons/vendor 等靜態資源
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 
-const root = path.join(__dirname, '..');
-const src = path.resolve(process.argv[2] || path.join(root, '..', 'bj-tools', '台灣股票.html'));
+const repoRoot = path.join(__dirname, '..');
+const APPS = {
+  stock: { src: path.join('..', 'bj-tools', '台灣股票.html') }
+};
+const appName = process.argv[2] || 'stock';
+if (!APPS[appName]) throw new Error(`未知的應用「${appName}」，可用：${Object.keys(APPS).join(', ')}`);
+const root = path.join(repoRoot, appName); // 以下所有輸出都寫進這個應用的子資料夾
+const src = path.resolve(process.argv[3] || path.join(repoRoot, APPS[appName].src));
 let html = fs.readFileSync(src, 'utf8');
 
 function mustReplace(label, re, replacement) {
@@ -51,7 +58,7 @@ mustReplace('</body>', /<\/body>/, '  <script src="pwa-init.js"></script>\n</bod
 fs.writeFileSync(path.join(root, 'index.html'), html);
 
 // 4. 建 Tailwind CSS
-const twBin = path.join(root, 'node_modules', 'tailwindcss', 'lib', 'cli.js');
+const twBin = path.join(repoRoot, 'node_modules', 'tailwindcss', 'lib', 'cli.js');
 execFileSync(process.execPath, [twBin, '-c', 'tailwind.config.js', '-i', 'src/input.css', '-o', 'tailwind.css', '--minify'], { cwd: root, stdio: 'inherit' });
 
 // 5. 以內容雜湊更新 sw.js 的 BUILD

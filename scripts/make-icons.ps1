@@ -1,6 +1,8 @@
 # Generate PWA icons (gradient background + white trend line) with System.Drawing
+param([string]$App = 'stock')
 Add-Type -AssemblyName System.Drawing
-$out = Join-Path $PSScriptRoot '..\icons'
+$out = Join-Path $PSScriptRoot "..\$App\icons"
+if (-not (Test-Path $out)) { New-Item -ItemType Directory -Path $out | Out-Null }
 
 function New-Icon([int]$size, [bool]$maskable, [bool]$rounded, [string]$name) {
   $bmp = New-Object System.Drawing.Bitmap $size, $size
