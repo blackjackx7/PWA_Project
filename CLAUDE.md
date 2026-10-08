@@ -2,7 +2,7 @@
 
 用 GitHub Pages 發佈的 PWA 集合，給手機「加入主畫面」使用。每個 PWA 一個子資料夾，網址是
 `https://blackjackx7.github.io/PWA_Project/<應用>/`。
-本 repo 是獨立 repo（`blackjackx7/PWA_Project`，branch `main`），不在 workproject 的共用 remote 底下。
+本 repo 是獨立 repo（`blackjackx7/PWA_Project`，branch `main`）。
 
 | 資料夾 | 應用 | 來源（唯一的程式碼來源） |
 |---|---|---|
