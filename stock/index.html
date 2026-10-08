@@ -1024,6 +1024,17 @@
         networkFailed = true;
         console.warn(`查詢 ${targetCode} 即時股價失敗（已重試一次）`, e);
       }
+
+      // 即時報價連不上時，上市股票改用歷史收盤價（含名稱）加入；歷史資料查得到代號卻沒資料，代表代號不存在
+      if (!live && networkFailed && targetMarket === 'tse') {
+        try {
+          live = await fetchHistoryQuote(targetCode);
+          networkFailed = !!live;
+          if (live) console.warn(`${targetCode} 即時報價失敗，改用歷史收盤價加入`);
+        } catch (e) {
+          console.warn(`查詢 ${targetCode} 歷史股價也失敗`, e);
+        }
+      }
       if (submitBtn) submitBtn.disabled = false;
 
       let newStock = null;
@@ -1033,6 +1044,8 @@
         newStock = sanitizeStock({
           code: targetCode,
           name: live.name || (matched ? matched.name : rawQuery),
+          priceDate: live.priceDate,
+          priceNote: live.priceNote,
           price: live.price,
           open: live.open,
           high: live.high,
@@ -1060,10 +1073,12 @@
           broker
         };
       } else if (networkFailed) {
-        alert(`查詢 [${rawQuery}] 股價時網路連線失敗（已自動重試一次），請稍後再按一次「加入監控」。`);
+        alert(targetMarket === 'tse'
+          ? `查詢 [${rawQuery}] 股價失敗：即時報價與歷史股價都連不上（網路或代理暫時不穩），請稍後再按一次「加入監控」。`
+          : `[${rawQuery}] 是上櫃股票，需要即時報價才能加入，但報價服務暫時連不上，請稍後再按一次「加入監控」。`);
         return;
       } else {
-        alert(`查無股票代號 [${rawQuery}] 的即時資料，請確認代號是否正確`);
+        alert(`查無股票代號 [${rawQuery}] 的資料，請確認代號是否正確（目前支援上市股票）`);
         return;
       }
 
@@ -1197,12 +1212,22 @@
       try {
         live = await fetchSingleLiveQuoteWithRetry(matched.code, matched.market);
       } catch (e) {
-        console.warn(`查詢 ${matched.code} 即時股價失敗，改用預設參考價`, e);
+        console.warn(`查詢 ${matched.code} 即時股價失敗，改用歷史收盤價`, e);
+      }
+      // 即時報價連不上時，上市股票改用最新收盤價，比內建的舊參考價準確；再失敗才退回內建參考價
+      if (!live && matched.market === 'tse') {
+        try {
+          live = await fetchHistoryQuote(matched.code);
+        } catch (e) {
+          console.warn(`查詢 ${matched.code} 歷史股價也失敗，改用預設參考價`, e);
+        }
       }
       const newStock = live
         ? sanitizeStock({
             code: matched.code,
             name: live.name || matched.name,
+            priceDate: live.priceDate,
+            priceNote: live.priceNote,
             price: live.price,
             open: live.open,
             high: live.high,
@@ -1872,26 +1897,76 @@
       return `${year}${String(month).padStart(2, '0')}`;
     }
 
-    // 抓單一個月份的每日收盤價，該月無交易資料（尚未上市/未來月份）時回傳空陣列，不視為錯誤
-    async function fetchHistoryMonth(code, yyyymm) {
-      const dateParam = `${yyyymm}01`;
+    // 抓單一個月份的 STOCK_DAY 原始 JSON
+    async function fetchStockDayJson(code, yyyymm) {
       // STOCK_DAY 這支 API 本身就有回 Access-Control-Allow-Origin: *，不像即時報價 API 需要透過
       // CORS_PROXY 轉發；改走代理反而會在抓一整年（最多 13 個月）時很容易撞上免費代理的流量限制（429）
-      const target = `${TWSE_STOCK_DAY_API}?response=json&date=${dateParam}&stockNo=${code}`;
+      const target = `${TWSE_STOCK_DAY_API}?response=json&date=${yyyymm}01&stockNo=${code}`;
       const res = await fetch(target, { cache: 'no-cache' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
-      const json = await res.json();
-      if (!Array.isArray(json.data)) return [];
+      return res.json();
+    }
 
-      return json.data.map(row => {
-        // row[0] 為民國日期，如 "113/01/02"；row[6] 為收盤價（可能含千分位逗號或 "--"）
-        const [rocYear, month, day] = String(row[0]).split('/');
-        if (!rocYear || !month || !day) return null;
-        const dateStr = `${parseInt(rocYear, 10) + 1911}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        const close = parseFloat(String(row[6]).replace(/,/g, ''));
-        if (isNaN(close)) return null;
-        return { date: dateStr, close };
-      }).filter(Boolean);
+    // STOCK_DAY 的一列 → { date, volume, open, high, low, close }；收盤價取不到（如 "--"）回傳 null
+    // row[0] 為民國日期如 "113/01/02"；數字欄位可能含千分位逗號：[1]成交股數 [3]開 [4]高 [5]低 [6]收
+    function parseStockDayRow(row) {
+      const [rocYear, month, day] = String(row[0]).split('/');
+      if (!rocYear || !month || !day) return null;
+      const num = (v) => parseFloat(String(v).replace(/,/g, ''));
+      const close = num(row[6]);
+      if (isNaN(close)) return null;
+      return {
+        date: `${parseInt(rocYear, 10) + 1911}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`,
+        volume: num(row[1]) || 0,
+        open: num(row[3]) || close,
+        high: num(row[4]) || close,
+        low: num(row[5]) || close,
+        close
+      };
+    }
+
+    // 抓單一個月份的每日收盤價，該月無交易資料（尚未上市/未來月份）時回傳空陣列，不視為錯誤
+    async function fetchHistoryMonth(code, yyyymm) {
+      const json = await fetchStockDayJson(code, yyyymm);
+      if (!Array.isArray(json.data)) return [];
+      return json.data.map(parseStockDayRow).filter(Boolean).map(({ date, close }) => ({ date, close }));
+    }
+
+    // 即時報價連不上時，加入股票用的備援：名稱取自 STOCK_DAY 標題、價格用最新收盤價。
+    // 查無資料（代號不存在或不是上市股票）回傳 null；網路失敗會往外拋出
+    async function fetchHistoryQuote(code) {
+      const now = new Date();
+      const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      let name = null;
+      let rows = [];
+      for (const key of [yyyymmKey(now.getFullYear(), now.getMonth() + 1), yyyymmKey(prev.getFullYear(), prev.getMonth() + 1)]) {
+        const json = await fetchStockDayJson(code, key);
+        if (!Array.isArray(json.data)) continue;
+        // 標題如 "115年10月 00850 元大臺灣ESG永續  各日成交資訊"
+        const m = String(json.title || '').match(/月\s+\S+\s+(.+?)\s+各日成交資訊/);
+        if (m && !name) name = m[1].trim();
+        rows = rows.concat(json.data.map(parseStockDayRow).filter(Boolean));
+        if (rows.length >= 2) break; // 當月已有兩個交易日就夠算漲跌，不必再抓上個月
+      }
+      if (!rows.length) return null;
+
+      rows.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+      const last = rows[rows.length - 1];
+      const prevClose = rows.length > 1 ? rows[rows.length - 2].close : last.close;
+      const change = Math.round((last.close - prevClose) * 100) / 100;
+      return {
+        code,
+        name,
+        price: last.close,
+        open: last.open,
+        high: last.high,
+        low: last.low,
+        volume: last.volume,
+        change,
+        changePercent: prevClose ? Math.round((change / prevClose) * 10000) / 100 : 0,
+        priceDate: last.date,
+        priceNote: `收盤價 ${last.date}（非即時）`
+      };
     }
 
     // 取得股票近 1 年歷史收盤價：已快取的過去月份直接沿用，只補打「上次查詢後到現在」的月份
