@@ -1,0 +1,22 @@
+{
+  "name": "pwa-project",
+  "version": "1.0.0",
+  "description": "台灣股票工具的 PWA 發佈版（由 workproject/bj-tools 同步產生）",
+  "scripts": {
+    "sync": "node scripts/sync.js",
+    "icons": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/make-icons.ps1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blackjackx7/PWA_Project.git"
+  },
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/blackjackx7/PWA_Project/issues"
+  },
+  "homepage": "https://github.com/blackjackx7/PWA_Project#readme",
+  "devDependencies": {
+    "tailwindcss": "^3.4.19"
+  },
+  "private": true
+}
