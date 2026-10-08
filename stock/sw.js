@@ -1,5 +1,5 @@
 // BUILD 由 scripts/sync.js 在每次同步時改寫，內容有變就會換新快取，舊快取在 activate 時清掉
-const BUILD = 'af41d3df9c';
+const BUILD = '9849cb9d67';
 const CACHE = `tw-stock-${BUILD}`;
 
 const PRECACHE = [
