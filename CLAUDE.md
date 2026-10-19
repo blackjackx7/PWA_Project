@@ -7,6 +7,7 @@
 | 資料夾 | 應用 | 來源（唯一的程式碼來源） |
 |---|---|---|
 | `stock/` | 台灣股票監控工具 | `../bj-tools/台灣股票.html` |
+| `route/` | 路線規劃（依直線距離排最短順序、標示完成） | 不在本 repo，規則同上 |
 
 ## 最重要的規則
 
@@ -27,5 +28,8 @@
 - **為什麼 Tailwind 要預先建置**：來源用 Tailwind CDN（瀏覽器即時編譯），離線與首次載入都不可靠，PWA 版改用建好的 `tailwind.css`。程式裡用字串拼出來的 class 若沒有完整出現在 HTML 原文，建置時掃不到，樣式會缺。
 - **為什麼 Font Awesome、Chart.js 放 `vendor/`**：離線也要能開；Google 字型體積大，改由 service worker 執行期快取。
 - **service worker 不快取報價與歷史股價 API**（證交所、CORS 代理）：價格必須是新的，失敗時的備援邏輯由頁面自己處理。`sw.js` 的 `BUILD` 由 `sync.js` 依檔案內容雜湊改寫，內容有變才會換新快取。
+- **`route/` 不用 Tailwind**：`sync.js` 的 `APPS` 以 `tailwind: false` 略過 Tailwind 步驟，改在 `cdn` 清單把 Leaflet、SheetJS 的 CDN 連結換成 `vendor/` 內的檔案；Leaflet 圖層切換鈕的圖示放在 `images/`。`localStorage` key 前綴是 `route_`。
+- **`route/` 的地圖圖磚**：圖磚在 `sw.js` 另開 `route-tiles` 快取（換版不清掉），上限 300 張、超過刪最舊的；沒看過的區域離線時沒有底圖，路徑規劃與完成標記不受影響。圖磚來源要新增網域時，同步改 `sw.js` 的 `TILE_HOSTS`。
+- **公開 repo 不放測試資料**：`route/` 只放程式與圖示，測試用的清單不進版控。
 - 所有路徑都用相對路徑，因為 Pages 網址帶 repo 名稱與子資料夾路徑。
 - 資料存在各瀏覽器 `localStorage`，依網域（不含路徑）區分：改 repo 名稱或搬子資料夾時網域不變、桌面瀏覽器資料還在，但已安裝到主畫面的圖示會因路徑變了而失效，要重新安裝；iOS 主畫面 app 的資料與 Safari 分頁分開，搬家前先匯出備份。

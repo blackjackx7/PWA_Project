@@ -11,11 +11,33 @@ const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 
 const repoRoot = path.join(__dirname, '..');
+// tailwind: 來源用 Tailwind CDN 才需要預先建置；otherwise 不碰 Tailwind
+// vendor: 把來源裡的 CDN 連結換成放在子資料夾 vendor/ 的檔案（離線也要能開）
 const APPS = {
-  stock: { src: path.join('..', 'bj-tools', '台灣股票.html') }
+  stock: {
+    src: path.join('..', 'bj-tools', '台灣股票.html'),
+    tailwind: true,
+    title: '台股監控',
+    theme: '#dc2626',
+    cdn: [
+      ['Font Awesome CDN', /https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/font-awesome\/[\d.]+\/css\/all\.min\.css/, 'vendor/fontawesome/css/all.min.css'],
+      ['Chart.js CDN', /https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/Chart\.js\/[\d.]+\/chart\.umd\.min\.js/, 'vendor/chart.umd.min.js']
+    ]
+  },
+  route: {
+    src: path.join('..', 'bj-tools', '路線規劃.html'),
+    tailwind: false,
+    title: '路線規劃',
+    theme: '#2563eb',
+    cdn: [
+      ['Leaflet CDN', /https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/leaflet\/[\d.]+\/leaflet\.min\.js/, 'vendor/leaflet.min.js'],
+      ['SheetJS CDN', /https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/xlsx\/[\d.]+\/xlsx\.full\.min\.js/, 'vendor/xlsx.full.min.js']
+    ]
+  }
 };
 const appName = process.argv[2] || 'stock';
 if (!APPS[appName]) throw new Error(`未知的應用「${appName}」，可用：${Object.keys(APPS).join(', ')}`);
+const app = APPS[appName];
 const root = path.join(repoRoot, appName); // 以下所有輸出都寫進這個應用的子資料夾
 const src = path.resolve(process.argv[3] || path.join(repoRoot, APPS[appName].src));
 let html = fs.readFileSync(src, 'utf8');
@@ -25,30 +47,31 @@ function mustReplace(label, re, replacement) {
   html = html.replace(re, replacement);
 }
 
-// 1. 擷取 tailwind.config 物件，產生 tailwind.config.js，並從 HTML 移除
-const cfgRe = /\n[ \t]*tailwind\.config = (\{[\s\S]*?\n[ \t]*\})\s*\n(?=[ \t]*<\/script>)/;
-const cfgMatch = html.match(cfgRe);
-if (!cfgMatch) throw new Error('來源 HTML 找不到 tailwind.config 區塊');
-const twConfig = new Function(`return (${cfgMatch[1]})`)();
-fs.writeFileSync(
-  path.join(root, 'tailwind.config.js'),
-  `// 由 scripts/sync.js 從來源 HTML 的 tailwind.config 自動產生，請勿手改\nmodule.exports = ${JSON.stringify({ content: ['./index.html'], ...twConfig }, null, 2)};\n`
-);
-html = html.replace(cfgRe, '\n');
+// 1. 擷取 tailwind.config 物件，產生 tailwind.config.js，並從 HTML 移除（只有用 Tailwind 的應用）
+if (app.tailwind) {
+  const cfgRe = /\n[ \t]*tailwind\.config = (\{[\s\S]*?\n[ \t]*\})\s*\n(?=[ \t]*<\/script>)/;
+  const cfgMatch = html.match(cfgRe);
+  if (!cfgMatch) throw new Error('來源 HTML 找不到 tailwind.config 區塊');
+  const twConfig = new Function(`return (${cfgMatch[1]})`)();
+  fs.writeFileSync(
+    path.join(root, 'tailwind.config.js'),
+    `// 由 scripts/sync.js 從來源 HTML 的 tailwind.config 自動產生，請勿手改\nmodule.exports = ${JSON.stringify({ content: ['./index.html'], ...twConfig }, null, 2)};\n`
+  );
+  html = html.replace(cfgRe, '\n');
+  mustReplace('Tailwind CDN', /[ \t]*<script src="https:\/\/cdn\.tailwindcss\.com"><\/script>/, '  <link rel="stylesheet" href="tailwind.css">');
+}
 
 // 2. 資源改用本地檔案
-mustReplace('Tailwind CDN', /[ \t]*<script src="https:\/\/cdn\.tailwindcss\.com"><\/script>/, '  <link rel="stylesheet" href="tailwind.css">');
-mustReplace('Font Awesome CDN', /https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/font-awesome\/[\d.]+\/css\/all\.min\.css/, 'vendor/fontawesome/css/all.min.css');
-mustReplace('Chart.js CDN', /https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/Chart\.js\/[\d.]+\/chart\.umd\.min\.js/, 'vendor/chart.umd.min.js');
+for (const [label, re, local] of app.cdn) mustReplace(label, re, local);
 
 // 3. PWA meta 與 service worker 註冊
 const pwaHead = `
   <!-- PWA -->
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#dc2626">
+  <meta name="theme-color" content="${app.theme}">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="台股監控">
+  <meta name="apple-mobile-web-app-title" content="${app.title}">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" href="icons/icon-192.png">`;
@@ -57,13 +80,17 @@ mustReplace('</body>', /<\/body>/, '  <script src="pwa-init.js"></script>\n</bod
 
 fs.writeFileSync(path.join(root, 'index.html'), html);
 
-// 4. 建 Tailwind CSS
-const twBin = path.join(repoRoot, 'node_modules', 'tailwindcss', 'lib', 'cli.js');
-execFileSync(process.execPath, [twBin, '-c', 'tailwind.config.js', '-i', 'src/input.css', '-o', 'tailwind.css', '--minify'], { cwd: root, stdio: 'inherit' });
+// 4. 建 Tailwind CSS（只有用 Tailwind 的應用）
+if (app.tailwind) {
+  const twBin = path.join(repoRoot, 'node_modules', 'tailwindcss', 'lib', 'cli.js');
+  execFileSync(process.execPath, [twBin, '-c', 'tailwind.config.js', '-i', 'src/input.css', '-o', 'tailwind.css', '--minify'], { cwd: root, stdio: 'inherit' });
+}
 
 // 5. 以內容雜湊更新 sw.js 的 BUILD
 const hash = crypto.createHash('sha1');
-for (const f of ['index.html', 'tailwind.css', 'pwa-init.js', 'manifest.webmanifest']) hash.update(fs.readFileSync(path.join(root, f)));
+for (const f of ['index.html', 'tailwind.css', 'pwa-init.js', 'manifest.webmanifest']) {
+  if (fs.existsSync(path.join(root, f))) hash.update(fs.readFileSync(path.join(root, f)));
+}
 const build = hash.digest('hex').slice(0, 10);
 const swPath = path.join(root, 'sw.js');
 const sw = fs.readFileSync(swPath, 'utf8');

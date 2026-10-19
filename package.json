@@ -4,7 +4,9 @@
   "description": "個人 PWA 集中放置處（GitHub Pages）",
   "scripts": {
     "sync:stock": "node scripts/sync.js stock",
-    "icons": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/make-icons.ps1 -App stock"
+    "sync:route": "node scripts/sync.js route",
+    "icons": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/make-icons.ps1 -App stock",
+    "icons:route": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/make-icons.ps1 -App route"
   },
   "repository": {
     "type": "git",

@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>路線規劃</title>
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="路線規劃">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+<style>.leaflet-image-layer,.leaflet-layer,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-pane,.leaflet-pane>canvas,.leaflet-pane>svg,.leaflet-tile,.leaflet-tile-container,.leaflet-zoom-box{position:absolute;left:0;top:0}.leaflet-container{overflow:hidden}.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-user-drag:none}.leaflet-tile::selection{background:0 0}.leaflet-safari .leaflet-tile{image-rendering:-webkit-optimize-contrast}.leaflet-safari .leaflet-tile-container{width:1600px;height:1600px;-webkit-transform-origin:0 0}.leaflet-marker-icon,.leaflet-marker-shadow{display:block}.leaflet-container .leaflet-overlay-pane svg{max-width:none!important;max-height:none!important}.leaflet-container .leaflet-marker-pane img,.leaflet-container .leaflet-shadow-pane img,.leaflet-container .leaflet-tile,.leaflet-container .leaflet-tile-pane img,.leaflet-container img.leaflet-image-layer{max-width:none!important;max-height:none!important;width:auto;padding:0}.leaflet-container img.leaflet-tile{mix-blend-mode:plus-lighter}.leaflet-container.leaflet-touch-zoom{-ms-touch-action:pan-x pan-y;touch-action:pan-x pan-y}.leaflet-container.leaflet-touch-drag{-ms-touch-action:pinch-zoom;touch-action:none;touch-action:pinch-zoom}.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom{-ms-touch-action:none;touch-action:none}.leaflet-container{-webkit-tap-highlight-color:transparent}.leaflet-container a{-webkit-tap-highlight-color:rgba(51,181,229,.4)}.leaflet-tile{filter:inherit;visibility:hidden}.leaflet-tile-loaded{visibility:inherit}.leaflet-zoom-box{width:0;height:0;-moz-box-sizing:border-box;box-sizing:border-box;z-index:800}.leaflet-overlay-pane svg{-moz-user-select:none}.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-shadow-pane{z-index:500}.leaflet-marker-pane{z-index:600}.leaflet-tooltip-pane{z-index:650}.leaflet-popup-pane{z-index:700}.leaflet-map-pane canvas{z-index:100}.leaflet-map-pane svg{z-index:200}.leaflet-vml-shape{width:1px;height:1px}.lvml{behavior:url(#default#VML);display:inline-block;position:absolute}.leaflet-control{position:relative;z-index:800;pointer-events:visiblePainted;pointer-events:auto}.leaflet-bottom,.leaflet-top{position:absolute;z-index:1000;pointer-events:none}.leaflet-top{top:0}.leaflet-right{right:0}.leaflet-bottom{bottom:0}.leaflet-left{left:0}.leaflet-control{float:left;clear:both}.leaflet-right .leaflet-control{float:right}.leaflet-top .leaflet-control{margin-top:10px}.leaflet-bottom .leaflet-control{margin-bottom:10px}.leaflet-left .leaflet-control{margin-left:10px}.leaflet-right .leaflet-control{margin-right:10px}.leaflet-fade-anim .leaflet-popup{opacity:0;-webkit-transition:opacity .2s linear;-moz-transition:opacity .2s linear;transition:opacity .2s linear}.leaflet-fade-anim .leaflet-map-pane .leaflet-popup{opacity:1}.leaflet-zoom-animated{-webkit-transform-origin:0 0;-ms-transform-origin:0 0;transform-origin:0 0}svg.leaflet-zoom-animated{will-change:transform}.leaflet-zoom-anim .leaflet-zoom-animated{-webkit-transition:-webkit-transform .25s cubic-bezier(0,0,.25,1);-moz-transition:-moz-transform .25s cubic-bezier(0,0,.25,1);transition:transform .25s cubic-bezier(0,0,.25,1)}.leaflet-pan-anim .leaflet-tile,.leaflet-zoom-anim .leaflet-tile{-webkit-transition:none;-moz-transition:none;transition:none}.leaflet-zoom-anim .leaflet-zoom-hide{visibility:hidden}.leaflet-interactive{cursor:pointer}.leaflet-grab{cursor:-webkit-grab;cursor:-moz-grab;cursor:grab}.leaflet-crosshair,.leaflet-crosshair .leaflet-interactive{cursor:crosshair}.leaflet-control,.leaflet-popup-pane{cursor:auto}.leaflet-dragging .leaflet-grab,.leaflet-dragging .leaflet-grab .leaflet-interactive,.leaflet-dragging .leaflet-marker-draggable{cursor:move;cursor:-webkit-grabbing;cursor:-moz-grabbing;cursor:grabbing}.leaflet-image-layer,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-pane>svg path,.leaflet-tile-container{pointer-events:none}.leaflet-image-layer.leaflet-interactive,.leaflet-marker-icon.leaflet-interactive,.leaflet-pane>svg path.leaflet-interactive,svg.leaflet-image-layer.leaflet-interactive path{pointer-events:visiblePainted;pointer-events:auto}.leaflet-container{background:#ddd;outline-offset:1px}.leaflet-container a{color:#0078a8}.leaflet-zoom-box{border:2px dotted #38f;background:rgba(255,255,255,.5)}.leaflet-container{font-family:"Helvetica Neue",Arial,Helvetica,sans-serif;font-size:12px;font-size:.75rem;line-height:1.5}.leaflet-bar{box-shadow:0 1px 5px rgba(0,0,0,.65);border-radius:4px}.leaflet-bar a{background-color:#fff;border-bottom:1px solid #ccc;width:26px;height:26px;line-height:26px;display:block;text-align:center;text-decoration:none;color:#000}.leaflet-bar a,.leaflet-control-layers-toggle{background-position:50% 50%;background-repeat:no-repeat;display:block}.leaflet-bar a:focus,.leaflet-bar a:hover{background-color:#f4f4f4}.leaflet-bar a:first-child{border-top-left-radius:4px;border-top-right-radius:4px}.leaflet-bar a:last-child{border-bottom-left-radius:4px;border-bottom-right-radius:4px;border-bottom:none}.leaflet-bar a.leaflet-disabled{cursor:default;background-color:#f4f4f4;color:#bbb}.leaflet-touch .leaflet-bar a{width:30px;height:30px;line-height:30px}.leaflet-touch .leaflet-bar a:first-child{border-top-left-radius:2px;border-top-right-radius:2px}.leaflet-touch .leaflet-bar a:last-child{border-bottom-left-radius:2px;border-bottom-right-radius:2px}.leaflet-control-zoom-in,.leaflet-control-zoom-out{font:bold 18px 'Lucida Console',Monaco,monospace;text-indent:1px}.leaflet-touch .leaflet-control-zoom-in,.leaflet-touch .leaflet-control-zoom-out{font-size:22px}.leaflet-control-layers{box-shadow:0 1px 5px rgba(0,0,0,.4);background:#fff;border-radius:5px}.leaflet-control-layers-toggle{background-image:url(images/layers.png);width:36px;height:36px}.leaflet-retina .leaflet-control-layers-toggle{background-image:url(images/layers-2x.png);background-size:26px 26px}.leaflet-touch .leaflet-control-layers-toggle{width:44px;height:44px}.leaflet-control-layers .leaflet-control-layers-list,.leaflet-control-layers-expanded .leaflet-control-layers-toggle{display:none}.leaflet-control-layers-expanded .leaflet-control-layers-list{display:block;position:relative}.leaflet-control-layers-expanded{padding:6px 10px 6px 6px;color:#333;background:#fff}.leaflet-control-layers-scrollbar{overflow-y:scroll;overflow-x:hidden;padding-right:5px}.leaflet-control-layers-selector{margin-top:2px;position:relative;top:1px}.leaflet-control-layers label{display:block;font-size:13px;font-size:1.08333em}.leaflet-control-layers-separator{height:0;border-top:1px solid #ddd;margin:5px -10px 5px -6px}.leaflet-default-icon-path{background-image:url(images/marker-icon.png)}.leaflet-container .leaflet-control-attribution{background:#fff;background:rgba(255,255,255,.8);margin:0}.leaflet-control-attribution,.leaflet-control-scale-line{padding:0 5px;color:#333;line-height:1.4}.leaflet-control-attribution a{text-decoration:none}.leaflet-control-attribution a:focus,.leaflet-control-attribution a:hover{text-decoration:underline}.leaflet-attribution-flag{display:inline!important;vertical-align:baseline!important;width:1em;height:.6669em}.leaflet-left .leaflet-control-scale{margin-left:5px}.leaflet-bottom .leaflet-control-scale{margin-bottom:5px}.leaflet-control-scale-line{border:2px solid #777;border-top:none;line-height:1.1;padding:2px 5px 1px;white-space:nowrap;-moz-box-sizing:border-box;box-sizing:border-box;background:rgba(255,255,255,.8);text-shadow:1px 1px #fff}.leaflet-control-scale-line:not(:first-child){border-top:2px solid #777;border-bottom:none;margin-top:-2px}.leaflet-control-scale-line:not(:first-child):not(:last-child){border-bottom:2px solid #777}.leaflet-touch .leaflet-bar,.leaflet-touch .leaflet-control-attribution,.leaflet-touch .leaflet-control-layers{box-shadow:none}.leaflet-touch .leaflet-bar,.leaflet-touch .leaflet-control-layers{border:2px solid rgba(0,0,0,.2);background-clip:padding-box}.leaflet-popup{position:absolute;text-align:center;margin-bottom:20px}.leaflet-popup-content-wrapper{padding:1px;text-align:left;border-radius:12px}.leaflet-popup-content{margin:13px 24px 13px 20px;line-height:1.3;font-size:13px;font-size:1.08333em;min-height:1px}.leaflet-popup-content p{margin:17px 0;margin:1.3em 0}.leaflet-popup-tip-container{width:40px;height:20px;position:absolute;left:50%;margin-top:-1px;margin-left:-20px;overflow:hidden;pointer-events:none}.leaflet-popup-tip{width:17px;height:17px;padding:1px;margin:-10px auto 0;pointer-events:auto;-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);transform:rotate(45deg)}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#fff;color:#333;box-shadow:0 3px 14px rgba(0,0,0,.4)}.leaflet-container a.leaflet-popup-close-button{position:absolute;top:0;right:0;border:none;text-align:center;width:24px;height:24px;font:16px/24px Tahoma,Verdana,sans-serif;color:#757575;text-decoration:none;background:0 0}.leaflet-container a.leaflet-popup-close-button:focus,.leaflet-container a.leaflet-popup-close-button:hover{color:#585858}.leaflet-popup-scrolled{overflow:auto}.leaflet-oldie .leaflet-popup-content-wrapper{-ms-zoom:1}.leaflet-oldie .leaflet-popup-tip{width:24px;margin:0 auto}.leaflet-oldie .leaflet-control-layers,.leaflet-oldie .leaflet-control-zoom,.leaflet-oldie .leaflet-popup-content-wrapper,.leaflet-oldie .leaflet-popup-tip{border:1px solid #999}.leaflet-div-icon{background:#fff;border:1px solid #666}.leaflet-tooltip{position:absolute;padding:6px;background-color:#fff;border:1px solid #fff;border-radius:3px;color:#222;white-space:nowrap;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.4)}.leaflet-tooltip.leaflet-interactive{cursor:pointer;pointer-events:auto}.leaflet-tooltip-bottom:before,.leaflet-tooltip-left:before,.leaflet-tooltip-right:before,.leaflet-tooltip-top:before{position:absolute;pointer-events:none;border:6px solid transparent;background:0 0;content:""}.leaflet-tooltip-bottom{margin-top:6px}.leaflet-tooltip-top{margin-top:-6px}.leaflet-tooltip-bottom:before,.leaflet-tooltip-top:before{left:50%;margin-left:-6px}.leaflet-tooltip-top:before{bottom:0;margin-bottom:-12px;border-top-color:#fff}.leaflet-tooltip-bottom:before{top:0;margin-top:-12px;margin-left:-6px;border-bottom-color:#fff}.leaflet-tooltip-left{margin-left:-6px}.leaflet-tooltip-right{margin-left:6px}.leaflet-tooltip-left:before,.leaflet-tooltip-right:before{top:50%;margin-top:-6px}.leaflet-tooltip-left:before{right:0;margin-right:-12px;border-left-color:#fff}.leaflet-tooltip-right:before{left:0;margin-left:-12px;border-right-color:#fff}@media print{.leaflet-control{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>
+<style>
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --text:#1d2330; --muted:#6b7280; --border:#dfe3e9;
+  --accent:#2563eb; --accent-text:#ffffff; --accent-soft:#e8efff;
+  --warn-bg:#fff6e5; --warn:#9a5a00; --err-bg:#fdecec; --err:#c62828;
+  --start:#e53935; --idle:#9aa3b2; --done:#2e8b57; --done-soft:#e6f4ec;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111419; --card:#1a1e26; --text:#e6e8ec; --muted:#9aa3b2; --border:#2c323d;
+    --accent:#5b93ff; --accent-text:#ffffff; --accent-soft:#1f2a44;
+    --warn-bg:#352812; --warn:#f0b75a; --err-bg:#3a1c1c; --err:#ff8a8a;
+    --start:#ff5a52; --idle:#6b7383; --done:#4cc38a; --done-soft:#1b2e24;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111419; --card:#1a1e26; --text:#e6e8ec; --muted:#9aa3b2; --border:#2c323d;
+  --accent:#5b93ff; --accent-text:#ffffff; --accent-soft:#1f2a44;
+  --warn-bg:#352812; --warn:#f0b75a; --err-bg:#3a1c1c; --err:#ff8a8a;
+  --start:#ff5a52; --idle:#6b7383; --done:#4cc38a; --done-soft:#1b2e24;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI","Noto Sans TC","Microsoft JhengHei",sans-serif;-webkit-text-size-adjust:100%}
+header{padding:14px 16px 6px;max-width:1280px;margin:0 auto}
+header h1{font-size:20px;margin:0}
+header p{margin:2px 0 0;color:var(--muted);font-size:13px}
+
+.layout{display:grid;gap:12px;padding:8px 16px 32px;max-width:1280px;margin:0 auto;
+  grid-template-columns:minmax(0,1fr);
+  grid-template-areas:"import" "start" "list" "plan" "map" "result";}
+.a-import{grid-area:import}.a-start{grid-area:start}.a-list{grid-area:list}
+.a-plan{grid-area:plan}.a-map{grid-area:map}.a-result{grid-area:result}
+@media (min-width:900px){
+  .layout{grid-template-columns:minmax(360px,440px) minmax(0,1fr);
+    grid-template-areas:"import map" "start map" "list map" "plan map" "result map";
+    grid-template-rows:auto auto auto auto 1fr;}
+  .a-map{align-self:start;position:sticky;top:12px;height:calc(100vh - 24px)}
+  #map{height:100%!important}
+}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;min-width:0}
+.card h2{font-size:16px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.step{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-text);font-size:12px;align-items:center;justify-content:center;flex:none}
+.hint{color:var(--muted);font-size:13px;margin:6px 0 0}
+
+button,.btn{min-height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font:inherit;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;white-space:nowrap}
+button:hover,.btn:hover{border-color:var(--accent)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+button.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+button.block{width:100%;min-height:46px;font-size:16px;font-weight:600}
+input[type=text],input[type=search],select{min-height:40px;width:100%;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font:inherit;font-size:16px;min-width:0}
+input[type=file]{width:100%;font:inherit;color:var(--text)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row > .grow{flex:1 1 160px}
+
+.notice{border-radius:8px;padding:8px 10px;font-size:13px;margin-top:10px}
+.notice.warn{background:var(--warn-bg);color:var(--warn)}
+.notice.err{background:var(--err-bg);color:var(--err)}
+.notice.ok{background:var(--accent-soft);color:var(--accent)}
+.notice:empty{display:none}
+
+.start-now{margin-top:10px;font-size:14px}
+.start-now b{color:var(--start)}
+
+.seg{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;flex:1}
+.seg button + button{border-left:1px solid var(--border)}
+.seg button.on{background:var(--accent);color:var(--accent-text)}
+
+.count{margin-left:auto;color:var(--muted);font-size:13px}
+.list{margin-top:10px;max-height:50vh;overflow:auto;border:1px solid var(--border);border-radius:8px;-webkit-overflow-scrolling:touch}
+.list:empty::before{content:"尚未匯入資料";display:block;padding:16px;color:var(--muted);text-align:center}
+.item{display:flex;gap:10px;align-items:stretch;padding:0;border-bottom:1px solid var(--border);user-select:none}
+.item:last-child{border-bottom:0}
+.item .pick{display:flex;gap:10px;align-items:flex-start;flex:1;min-width:0;padding:10px 0 10px 12px;cursor:pointer}
+.item.checked{background:var(--accent-soft)}
+.item.invalid .pick{opacity:.55;cursor:not-allowed}
+.item.done{background:var(--done-soft)}
+.item.done .pick{opacity:.65;cursor:default}
+.item.done .name{text-decoration:line-through}
+.item input{width:20px;height:20px;margin:2px 0 0;flex:none;accent-color:var(--accent)}
+.donebox{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:64px;border-left:1px solid var(--border);font-size:12px;color:var(--muted);cursor:pointer}
+.donebox input{margin:0;accent-color:var(--done)}
+.donebox.off{opacity:.4;cursor:not-allowed}
+.item .doneat{color:var(--done);font-size:12.5px}
+.tools{margin-top:8px}
+.tools label{display:inline-flex;align-items:center;gap:6px;min-height:40px;cursor:pointer}
+.tools input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+button.warnbtn{border-color:var(--err);color:var(--err)}
+.item .body{min-width:0;flex:1}
+.item .name{font-weight:600;word-break:break-all}
+.item .meta{color:var(--muted);font-size:12.5px;word-break:break-all}
+.tag{display:inline-block;font-size:11px;padding:0 6px;border-radius:4px;margin-left:6px;vertical-align:1px;font-weight:500}
+.tag.warn{background:var(--warn-bg);color:var(--warn)}
+.tag.err{background:var(--err-bg);color:var(--err)}
+
+#map{height:55vh;min-height:320px;border-radius:12px;border:1px solid var(--border);z-index:0}
+.map-tools{position:absolute;top:10px;right:10px;z-index:500;display:flex;gap:6px}
+.map-tools button{min-height:34px;padding:0 10px;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.a-map{position:relative}
+.picking #map{cursor:crosshair}
+.pick-banner{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;z-index:500;background:var(--start);color:#fff;padding:6px 12px;border-radius:999px;font-size:13px;display:none;white-space:nowrap}
+.picking .pick-banner{display:block}
+
+.summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.summary div{background:var(--accent-soft);border-radius:8px;padding:8px;text-align:center}
+.summary b{display:block;font-size:18px;color:var(--accent)}
+.summary span{font-size:12px;color:var(--muted)}
+.route{list-style:none;margin:10px 0 0;padding:0;border:1px solid var(--border);border-radius:8px;max-height:60vh;overflow:auto}
+.route li{display:flex;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);align-items:flex-start}
+.route li:last-child{border-bottom:0}
+.route .no{flex:none;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-text);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.route .no.s{background:var(--start)}
+.route .body{flex:1;min-width:0}
+.route .dist{flex:none;text-align:right;font-size:12.5px;color:var(--muted);line-height:1.35}
+.route .dist b{color:var(--text);font-size:13.5px}
+.links{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.links a{justify-content:flex-start;white-space:normal;padding:8px 12px}
+
+.num-icon span{display:flex;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;border:2px solid #fff;align-items:center;justify-content:center;font:700 12px/1 system-ui,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.start-icon span{display:flex;width:30px;height:30px;border-radius:50%;background:var(--start);color:#fff;border:2px solid #fff;align-items:center;justify-content:center;font:700 13px/1 system-ui,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+</style>
+</head>
+<body>
+<header>
+  <h1>路線規劃</h1>
+  <p>匯入地點資料，勾選要經過的地點，依直線距離算出最短順序</p>
+</header>
+
+<main class="layout">
+  <section class="card a-import">
+    <h2><span class="step">1</span>匯入地點資料</h2>
+    <input type="file" id="file" accept=".csv,.xlsx,.xls">
+    <p class="hint">支援 CSV、Excel。欄位依序為：地點、代號、經度、緯度、地址、完成時間（後兩欄可省略），表頭文字不限。有完成時間的列會標示為已完成。經緯度填反會自動對調。</p>
+    <div class="notice" id="importMsg"></div>
+  </section>
+
+  <section class="card a-start">
+    <h2><span class="step">2</span>設定起始位置</h2>
+    <div class="row">
+      <input type="text" class="grow" id="startInput" placeholder="緯度, 經度（可直接貼上）" inputmode="decimal">
+      <button id="startApply">套用</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <select class="grow" id="startPoint"><option value="">或選擇某個地點作為起點…</option></select>
+      <button id="startPick">在地圖點選</button>
+    </div>
+    <div class="start-now" id="startNow">起點：<span style="color:var(--muted)">尚未設定</span></div>
+  </section>
+
+  <section class="card a-list">
+    <h2><span class="step">3</span>勾選地點</h2>
+    <input type="search" id="search" placeholder="搜尋地點、代號、地址">
+    <div class="row" style="margin-top:8px">
+      <button id="selAll">全選</button>
+      <button id="selNone">全取消</button>
+      <span class="count" id="count">已勾選 0 個</span>
+    </div>
+    <div class="row tools">
+      <label for="hideDone"><input type="checkbox" id="hideDone">隱藏已完成</label>
+      <button id="exportList">匯出清單</button>
+      <button id="clearDone" class="grow">清除完成記錄</button>
+    </div>
+    <div class="list" id="list"></div>
+  </section>
+
+  <section class="card a-plan">
+    <h2><span class="step">4</span>規劃路徑</h2>
+    <div class="seg" id="modeSeg">
+      <button data-mode="round">環狀（回到起點）</button>
+      <button data-mode="open">單程（不回起點）</button>
+    </div>
+    <button class="primary block" id="planBtn" style="margin-top:10px">規劃最佳路徑</button>
+    <div class="notice" id="planMsg"></div>
+  </section>
+
+  <section class="a-map">
+    <div id="map"></div>
+    <div class="map-tools"><button id="fitBtn">全部顯示</button></div>
+    <div class="pick-banner">點地圖任一處設為起點</div>
+  </section>
+
+  <section class="card a-result" id="result" hidden>
+    <h2>路線順序</h2>
+    <div class="summary" id="summary"></div>
+    <div class="row">
+      <button id="exportBtn">匯出 CSV</button>
+    </div>
+    <div class="links" id="links"></div>
+    <ol class="route" id="route"></ol>
+  </section>
+</main>
+
+<script src="vendor/leaflet.min.js"></script>
+<script src="vendor/xlsx.full.min.js"></script>
+<script>
+(() => {
+'use strict';
+
+const LS_KEY = 'route_plan_v1';
+const EXACT_LIMIT = 13;          // 點數 ≤ 此值用 Held-Karp 精確解
+const GMAPS_POINTS = 10;          // Google Maps 每段連結最多點數（起點＋8 中途點＋終點）
+
+let points = [];   // {id,name,code,lat,lng,addr,checked,swapped,invalid,done,doneAt}
+let hideDone = false;
+let start = null;    // {lat,lng,label,pointId}
+let mode = 'round';
+let lastRoute = null;
+let picking = false;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtKm = m => (m / 1000).toFixed(m < 10000 ? 2 : 1);
+
+// ---------- 儲存 ----------
+function save() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify({ points, start, mode, hideDone })); } catch (e) {}
+}
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    if (!d) return;
+    points = Array.isArray(d.points) ? d.points : [];
+    start = d.start || null;
+    mode = d.mode === 'open' ? 'open' : 'round';
+    hideDone = !!d.hideDone;
+  } catch (e) {}
+}
+
+// ---------- 座標 ----------
+function parseNum(v) {
+  if (typeof v === 'number') return v;
+  const m = String(v ?? '').match(/[-+]?\d+(?:\.\d+)?/);
+  return m ? Number(m[0]) : NaN;
+}
+// 經緯度判別：緯度必須在 ±90 內；若「緯度」欄超出而「經度」欄在範圍內，代表填反了
+function normalizeLatLng(latRaw, lngRaw) {
+  let lat = parseNum(latRaw), lng = parseNum(lngRaw);
+  if (!isFinite(lat) || !isFinite(lng) || (lat === 0 && lng === 0)) return { ok: false };
+  let swapped = false;
+  if (Math.abs(lat) > 90 && Math.abs(lng) <= 90) { [lat, lng] = [lng, lat]; swapped = true; }
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return { ok: false };
+  return { ok: true, lat, lng, swapped };
+}
+function haversine(a, b) {
+  const R = 6371008.8, toR = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * toR, dLng = (b.lng - a.lng) * toR;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * toR) * Math.cos(b.lat * toR) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+// ---------- 匯入 ----------
+async function readWorkbook(file) {
+  const buf = await file.arrayBuffer();
+  if (/\.csv$/i.test(file.name)) {
+    // Excel 存出的 CSV 常是 Big5，UTF-8 解不開時改用 Big5
+    let text;
+    try { text = new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+    catch (e) { text = new TextDecoder('big5').decode(buf); }
+    return XLSX.read(text.replace(/^﻿/, ''), { type: 'string', raw: true });
+  }
+  return XLSX.read(buf, { type: 'array' });
+}
+
+// 完成時間：格式 YYYY-MM-DD HH:mm，匯出與匯入共用
+const pad2 = n => String(n).padStart(2, '0');
+const fmtTime = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+// 匯入第 6 欄：有內容就視為已完成。Excel 日期會是序號，轉回日期字串；其他文字照原樣保留
+function parseDoneAt(v) {
+  if (v instanceof Date && !isNaN(v)) return fmtTime(v);
+  if (typeof v === 'number' && v > 20000 && v < 80000) {
+    const d = new Date(Math.round((v - 25569) * 864e5));
+    return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())} ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`;
+  }
+  return String(v ?? '').trim();
+}
+
+// 依欄位順序讀取：地點、代號、經度、緯度、地址、完成時間（不比對表頭文字）
+const isNum = v => typeof v === 'number' || /^\s*[-+]?\d+(?:\.\d+)?\s*$/.test(String(v ?? ''));
+function rowsToPoints(rows) {
+  const blank = r => !r.some(c => String(c ?? '').trim() !== '');
+  const data = rows.filter(r => !blank(r));
+  const width = Math.max(0, ...data.map(r => r.length));
+  if (width < 4) throw new Error('欄位不足，需依序為：地點、代號、經度、緯度（地址可省略）');
+  // 第一列的第 3、4 欄都是數字就當資料，否則視為表頭跳過
+  const body = data.length && isNum(data[0][2]) && isNum(data[0][3]) ? data : data.slice(1);
+  return body.map((r, i) => {
+    const get = k => String(r[k] ?? '').trim();
+    const c = normalizeLatLng(r[3], r[2]);
+    const doneAt = c.ok ? parseDoneAt(r[5]) : '';
+    return {
+      id: 's' + i, name: get(0), code: get(1), addr: get(4),
+      lat: c.ok ? c.lat : null, lng: c.ok ? c.lng : null,
+      swapped: !!c.swapped, invalid: !c.ok, checked: false,
+      done: !!doneAt, doneAt,
+    };
+  });
+}
+
+$('file').addEventListener('change', async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const msg = $('importMsg');
+  try {
+    const wb = await readWorkbook(f);
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '', raw: true });
+    const list = rowsToPoints(rows);
+    if (!list.length) throw new Error('檔案裡沒有資料列');
+    points = list;
+    if (start && start.pointId) start = null;
+    clearRoute();
+    const bad = list.filter(s => s.invalid).length, sw = list.filter(s => s.swapped).length;
+    let t = `已匯入 ${list.length} 個地點`;
+    if (sw) t += `，其中 ${sw} 筆經緯度填反，已自動對調`;
+    if (bad) t += `；${bad} 筆座標空白或錯誤，無法勾選`;
+    const dn = list.filter(s => s.done).length;
+    if (dn) t += `；${dn} 個已標示完成`;
+    msg.className = 'notice ' + (bad || sw ? 'warn' : 'ok');
+    msg.textContent = t;
+    save(); renderAll(); fitAll();
+  } catch (err) {
+    msg.className = 'notice err';
+    msg.textContent = '匯入失敗：' + err.message;
+  }
+  e.target.value = '';
+});
+
+// ---------- 清單 ----------
+function filtered() {
+  const q = $('search').value.trim().toLowerCase();
+  const base = hideDone ? points.filter(s => !s.done) : points;
+  if (!q) return base;
+  return base.filter(s => (s.name + ' ' + s.code + ' ' + s.addr).toLowerCase().includes(q));
+}
+function renderList() {
+  $('list').innerHTML = filtered().map(s => `
+    <div class="item${s.checked ? ' checked' : ''}${s.invalid ? ' invalid' : ''}${s.done ? ' done' : ''}" data-id="${s.id}">
+      <label class="pick">
+        <input type="checkbox" class="sel" ${s.checked ? 'checked' : ''} ${s.invalid || s.done ? 'disabled' : ''}>
+        <div class="body">
+          <div class="name">${esc(s.name) || '(未命名)'}${s.swapped ? '<span class="tag warn">經緯度已對調</span>' : ''}${s.invalid ? '<span class="tag err">座標錯誤</span>' : ''}</div>
+          <div class="meta">代號 ${esc(s.code) || '-'}${s.addr ? '｜' + esc(s.addr) : ''}</div>
+          ${s.done ? `<div class="doneat">完成 ${esc(s.doneAt)}</div>` : ''}
+        </div>
+      </label>
+      <label class="donebox${s.invalid ? ' off' : ''}"><input type="checkbox" class="dn" ${s.done ? 'checked' : ''} ${s.invalid ? 'disabled' : ''}>已完成</label>
+    </div>`).join('');
+  updateCount();
+}
+function updateCount() {
+  const n = points.filter(s => s.checked).length, d = points.filter(s => s.done).length;
+  $('count').textContent = `已勾選 ${n} 個｜已完成 ${d} / ${points.length}`;
+  const b = $('clearDone');
+  b.disabled = d === 0;
+  if (!d) resetClearBtn();
+}
+function setChecked(ids, val) {
+  const set = new Set(ids);
+  points.forEach(s => { if (set.has(s.id) && !s.invalid && !s.done) s.checked = val; });
+  clearRoute(); save(); renderList(); renderPointMarkers();
+}
+function setDone(id, val) {
+  const s = points.find(x => x.id === id);
+  if (!s || s.invalid) return;
+  s.done = val;
+  s.doneAt = val ? fmtTime(new Date()) : '';
+  if (val) s.checked = false;
+  clearRoute(); save(); renderList(); renderPointMarkers();
+}
+$('list').addEventListener('change', e => {
+  const item = e.target.closest('.item');
+  if (!item) return;
+  if (e.target.classList.contains('dn')) setDone(item.dataset.id, e.target.checked);
+  else setChecked([item.dataset.id], e.target.checked);
+});
+$('hideDone').addEventListener('change', e => { hideDone = e.target.checked; save(); renderList(); });
+
+// 清除完成記錄：需再按一次確認（頁面內確認，不用對話框）
+let clearTimer = null;
+function resetClearBtn() {
+  clearTimeout(clearTimer); clearTimer = null;
+  const b = $('clearDone');
+  b.textContent = '清除完成記錄';
+  b.classList.remove('warnbtn');
+}
+$('clearDone').addEventListener('click', () => {
+  const b = $('clearDone');
+  if (!clearTimer) {
+    b.textContent = '再按一次確認清除';
+    b.classList.add('warnbtn');
+    clearTimer = setTimeout(resetClearBtn, 4000);
+    return;
+  }
+  resetClearBtn();
+  points.forEach(s => { s.done = false; s.doneAt = ''; });
+  clearRoute(); save(); renderList(); renderPointMarkers();
+});
+$('search').addEventListener('input', renderList);
+$('selAll').addEventListener('click', () => setChecked(filtered().map(s => s.id), true));
+$('selNone').addEventListener('click', () => setChecked(filtered().map(s => s.id), false));
+
+// ---------- 起點 ----------
+function setStart(s) {
+  start = s; clearRoute(); save(); renderStart();
+}
+function renderStart() {
+  const el = $('startNow');
+  if (!start) { el.innerHTML = '起點：<span style="color:var(--muted)">尚未設定</span>'; }
+  else el.innerHTML = `起點：<b>${esc(start.label)}</b> <span style="color:var(--muted)">(${start.lat.toFixed(5)}, ${start.lng.toFixed(5)})</span>`;
+  const sel = $('startPoint');
+  sel.innerHTML = '<option value="">或選擇某個地點作為起點…</option>' +
+    points.filter(s => !s.invalid).map(s => `<option value="${s.id}">${esc(s.name)}（${esc(s.code)}）</option>`).join('');
+  sel.value = start && start.pointId ? start.pointId : '';
+  renderStartMarker();
+}
+$('startApply').addEventListener('click', () => {
+  const parts = $('startInput').value.split(/[,，\s]+/).filter(Boolean);
+  const c = parts.length >= 2 ? normalizeLatLng(parts[0], parts[1]) : { ok: false };
+  if (!c.ok) { alertMsg('起點格式錯誤，請輸入「緯度, 經度」'); return; }
+  setStart({ lat: c.lat, lng: c.lng, label: '自訂座標' });
+  map.setView([c.lat, c.lng], Math.max(map.getZoom(), 12));
+});
+$('startPoint').addEventListener('change', e => {
+  const s = points.find(x => x.id === e.target.value);
+  if (!s) return;
+  setStart({ lat: s.lat, lng: s.lng, label: s.name + '（地點）', pointId: s.id });
+});
+$('startPick').addEventListener('click', () => setPicking(!picking));
+function setPicking(on) {
+  picking = on;
+  document.querySelector('.a-map').classList.toggle('picking', on);
+  $('startPick').classList.toggle('active', on);
+  $('startPick').textContent = on ? '取消點選' : '在地圖點選';
+  if (on && window.innerWidth < 900) document.querySelector('.a-map').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function alertMsg(t) { const m = $('planMsg'); m.className = 'notice err'; m.textContent = t; }
+
+// ---------- 模式 ----------
+function renderMode() {
+  document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+}
+$('modeSeg').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b || b.dataset.mode === mode) return;
+  mode = b.dataset.mode; save(); renderMode();
+  if (lastRoute) plan();
+});
+
+// ---------- 路徑演算法 ----------
+// 節點 0 為起點，1..m 為地點。回傳拜訪順序（不含起點）
+function heldKarp(D, n, round) {
+  const m = n - 1, full = 1 << m;
+  const dp = new Float64Array(full * m).fill(Infinity);
+  const par = new Int8Array(full * m).fill(-1);
+  for (let j = 0; j < m; j++) dp[(1 << j) * m + j] = D[j + 1];
+  for (let mask = 1; mask < full; mask++) {
+    for (let j = 0; j < m; j++) {
+      const cur = dp[mask * m + j];
+      if (!(mask & (1 << j)) || cur === Infinity) continue;
+      for (let k = 0; k < m; k++) {
+        if (mask & (1 << k)) continue;
+        const nm = mask | (1 << k), v = cur + D[(j + 1) * n + k + 1];
+        if (v < dp[nm * m + k]) { dp[nm * m + k] = v; par[nm * m + k] = j; }
+      }
+    }
+  }
+  let best = Infinity, last = 0;
+  for (let j = 0; j < m; j++) {
+    const v = dp[(full - 1) * m + j] + (round ? D[(j + 1) * n] : 0);
+    if (v < best) { best = v; last = j; }
+  }
+  const order = [];
+  let mask = full - 1, j = last;
+  while (j >= 0) { order.push(j + 1); const p = par[mask * m + j]; mask ^= 1 << j; j = p; }
+  return order.reverse();
+}
+
+function heuristic(D, n, round) {
+  // 最近鄰居法建立初始路徑
+  const used = new Uint8Array(n); used[0] = 1;
+  const t = [0];
+  for (let s = 1; s < n; s++) {
+    const a = t[t.length - 1];
+    let best = -1, bd = Infinity;
+    for (let k = 1; k < n; k++) if (!used[k] && D[a * n + k] < bd) { bd = D[a * n + k]; best = k; }
+    used[best] = 1; t.push(best);
+  }
+  const d = (x, y) => D[x * n + y];
+  let improved = true, guard = 0;
+  while (improved && guard++ < 1000) {
+    improved = twoOpt() | orOpt();
+  }
+  return t.slice(1);
+
+  // 2-opt：反轉 t[i..j]，起點 t[0] 固定
+  function twoOpt() {
+    let improved = false;
+    for (let i = 1; i < n - 1; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const a = t[i - 1], b = t[i], c = t[j];
+        const hasNext = j < n - 1 || round;
+        const e = j < n - 1 ? t[j + 1] : t[0];
+        const delta = d(a, c) - d(a, b) + (hasNext ? d(b, e) - d(c, e) : 0);
+        if (delta < -1e-6) {
+          for (let x = i, y = j; x < y; x++, y--) [t[x], t[y]] = [t[y], t[x]];
+          improved = true;
+        }
+      }
+    }
+    return improved;
+  }
+
+  // Or-opt：把連續 1~3 個點整段搬到別處（可反向插入）
+  function orOpt() {
+    let improved = false;
+    for (let L = 1; L <= 3; L++) {
+      for (let i = 1; i + L <= n; i++) {
+        const prev = t[i - 1], first = t[i], last = t[i + L - 1];
+        const next = i + L < n ? t[i + L] : (round ? t[0] : -1);
+        const gain = d(prev, first) + (next >= 0 ? d(last, next) - d(prev, next) : 0);
+        let best = -1e-6, bp = -1, brev = false;
+        for (let p = 0; p < n; p++) {
+          if (p >= i - 1 && p <= i + L - 1) continue;
+          const a = t[p], b = p + 1 < n ? t[p + 1] : (round ? t[0] : -1);
+          const base = b >= 0 ? d(a, b) : 0;
+          const fwd = d(a, first) + (b >= 0 ? d(last, b) : 0) - base - gain;
+          const rev = d(a, last) + (b >= 0 ? d(first, b) : 0) - base - gain;
+          if (fwd < best) { best = fwd; bp = p; brev = false; }
+          if (rev < best) { best = rev; bp = p; brev = true; }
+        }
+        if (bp >= 0) {
+          const seg = t.splice(i, L);
+          if (brev) seg.reverse();
+          t.splice(bp < i ? bp + 1 : bp + 1 - L, 0, ...seg);
+          improved = true;
+        }
+      }
+    }
+    return improved;
+  }
+}
+
+function plan() {
+  if (!start) { alertMsg('請先設定起始位置'); return; }
+  const sel = points.filter(s => s.checked && !s.invalid && !s.done && s.id !== start.pointId);
+  if (!sel.length) { alertMsg('請至少勾選一個地點（起點與已完成的不列入）'); return; }
+
+  const pts = [start, ...sel], n = pts.length;
+  const D = new Float64Array(n * n);
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) D[i * n + j] = D[j * n + i] = haversine(pts[i], pts[j]);
+
+  const round = mode === 'round';
+  const exact = sel.length <= EXACT_LIMIT;
+  const order = exact ? heldKarp(D, n, round) : heuristic(D, n, round);
+
+  const legs = [];
+  let prev = 0, total = 0;
+  for (const k of order) { const dist = D[prev * n + k]; total += dist; legs.push({ p: pts[k], dist, cum: total }); prev = k; }
+  let back = null;
+  if (round) { back = D[prev * n]; total += back; }
+
+  lastRoute = { legs, back, total, exact, round };
+  const m = $('planMsg');
+  m.className = 'notice ok';
+  m.textContent = exact ? `已算出最短路徑（精確解，共 ${sel.length} 個地點）` : `已規劃路徑（${sel.length} 個地點，近似最佳解）`;
+  renderResult(); renderRoute();
+  if (window.innerWidth < 900) document.querySelector('.a-map').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+$('planBtn').addEventListener('click', plan);
+
+function clearRoute() {
+  lastRoute = null;
+  $('result').hidden = true;
+  $('planMsg').textContent = '';
+  if (routeLayer) routeLayer.clearLayers();
+  if (pointLayer && map && !map.hasLayer(pointLayer)) pointLayer.addTo(map);
+}
+
+// ---------- 結果 ----------
+function renderResult() {
+  const r = lastRoute;
+  $('result').hidden = false;
+  $('summary').innerHTML = `
+    <div><b>${fmtKm(r.total)}</b><span>總距離 (km)</span></div>
+    <div><b>${r.legs.length}</b><span>點數</span></div>
+    <div><b>${r.round ? '環狀' : '單程'}</b><span>${r.exact ? '精確解' : '近似解'}</span></div>`;
+
+  let html = `<li><span class="no s">起</span><div class="body"><div class="name"><b>${esc(start.label)}</b></div>
+    <div class="meta" style="color:var(--muted);font-size:12.5px">${start.lat.toFixed(5)}, ${start.lng.toFixed(5)}</div></div></li>`;
+  r.legs.forEach((l, i) => {
+    html += `<li><span class="no">${i + 1}</span><div class="body"><div><b>${esc(l.p.name)}</b></div>
+      <div style="color:var(--muted);font-size:12.5px;word-break:break-all">代號 ${esc(l.p.code) || '-'}${l.p.addr ? '｜' + esc(l.p.addr) : ''}</div></div>
+      <div class="dist"><b>+${fmtKm(l.dist)}</b> km<br>累計 ${fmtKm(l.cum)}</div></li>`;
+  });
+  if (r.round) html += `<li><span class="no s">終</span><div class="body"><b>回到起點</b></div>
+    <div class="dist"><b>+${fmtKm(r.back)}</b> km<br>累計 ${fmtKm(r.total)}</div></li>`;
+  $('route').innerHTML = html;
+
+  // Google Maps 分段導航連結
+  const seq = [start, ...r.legs.map(l => l.p)];
+  if (r.round) seq.push(start);
+  const ll = p => `${p.lat},${p.lng}`;
+  const links = [];
+  for (let i = 0; i < seq.length - 1; i += GMAPS_POINTS - 1) {
+    const chunk = seq.slice(i, i + GMAPS_POINTS);
+    const url = 'https://www.google.com/maps/dir/?api=1&travelmode=driving'
+      + '&origin=' + ll(chunk[0]) + '&destination=' + ll(chunk[chunk.length - 1])
+      + (chunk.length > 2 ? '&waypoints=' + encodeURIComponent(chunk.slice(1, -1).map(ll).join('|')) : '');
+    const label = j => (i + j === 0 ? '起點' : (r.round && i + j === seq.length - 1) ? '終點' : '第' + (i + j) + '點');
+    links.push(`<a class="btn" href="${url}" target="_blank" rel="noopener">Google Maps 導航${seq.length > GMAPS_POINTS ? `（${label(0)} → ${label(chunk.length - 1)}）` : ''}</a>`);
+  }
+  $('links').innerHTML = links.join('');
+}
+
+const q = v => /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v);
+// DELIVER_START
+function deliver(text, name, btn, label) {
+  const blob = new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+// DELIVER_END
+$('exportBtn').addEventListener('click', () => {
+  const r = lastRoute;
+  if (!r) return;
+  const lines = [['順序', '地點', '代號', '經度', '緯度', '地址', '區間距離(km)', '累計距離(km)'].map(q).join(',')];
+  lines.push(['起點', start.label, '', start.lng, start.lat, '', '', ''].map(q).join(','));
+  r.legs.forEach((l, i) => lines.push([i + 1, l.p.name, l.p.code, l.p.lng, l.p.lat, l.p.addr, fmtKm(l.dist), fmtKm(l.cum)].map(q).join(',')));
+  if (r.round) lines.push(['終點', '回到起點', '', start.lng, start.lat, '', fmtKm(r.back), fmtKm(r.total)].map(q).join(','));
+  deliver(lines.join('\r\n'), '路線.csv', $('exportBtn'), '匯出 CSV');
+});
+
+// 匯出全部地點（含完成時間），欄位順序與匯入相同，可直接再匯入還原完成狀態
+$('exportList').addEventListener('click', () => {
+  if (!points.length) return;
+  const lines = [['地點', '代號', '經度', '緯度', '地址', '完成時間'].map(q).join(',')];
+  points.forEach(s => lines.push([s.name, s.code, s.invalid ? '' : s.lng, s.invalid ? '' : s.lat, s.addr, s.done ? s.doneAt : ''].map(q).join(',')));
+  deliver(lines.join('\r\n'), '地點清單.csv', $('exportList'), '匯出清單');
+});
+
+// ---------- 地圖 ----------
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const map = L.map('map', { preferCanvas: true, zoomControl: true }).setView([23.7, 120.95], 7);
+const baseMaps = {
+  '台灣電子地圖': L.tileLayer('https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}', {
+    maxZoom: 19, attribution: '&copy; 國土測繪中心' }),
+  '街道圖 (CARTO)': L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19, subdomains: 'abcd', attribution: '&copy; OpenStreetMap &copy; CARTO' }),
+};
+const baseNames = Object.keys(baseMaps);
+let curBase = baseMaps[baseNames[0]].addTo(map), tileErrs = 0;
+// 圖磚連續載入失敗（被擋或網路問題）時，自動切到下一個底圖
+function watchTiles(layer) {
+  layer.on('tileerror', () => {
+    if (layer !== curBase || ++tileErrs < 4) return;
+    const next = baseNames.map(n => baseMaps[n]).find(l => l !== layer && !l._failed);
+    layer._failed = true;
+    if (next) { map.removeLayer(layer); curBase = next.addTo(map); tileErrs = 0; }
+  });
+  layer.on('tileload', () => { if (layer === curBase) tileErrs = 0; });
+}
+Object.values(baseMaps).forEach(watchTiles);
+L.control.layers(baseMaps, null, { position: 'topleft' }).addTo(map);
+map.on('baselayerchange', e => { curBase = e.layer; tileErrs = 0; });
+const pointLayer = L.layerGroup().addTo(map);
+const routeLayer = L.layerGroup().addTo(map);
+let startMarker = null;
+
+function renderPointMarkers() {
+  pointLayer.clearLayers();
+  const on = css('--accent'), off = css('--idle'), dn = css('--done');
+  points.forEach(s => {
+    if (s.invalid) return;
+    L.circleMarker([s.lat, s.lng], {
+      radius: s.checked ? 7 : 5, color: '#fff', weight: 1.5,
+      fillColor: s.done ? dn : s.checked ? on : off, fillOpacity: s.checked || s.done ? 0.95 : 0.8,
+    }).bindTooltip(`${esc(s.name)}（${esc(s.code)}）`)
+      .on('click', () => { if (!picking) setChecked([s.id], !s.checked); })
+      .addTo(pointLayer);
+  });
+}
+function renderStartMarker() {
+  if (startMarker) { startMarker.remove(); startMarker = null; }
+  if (!start) return;
+  startMarker = L.marker([start.lat, start.lng], {
+    icon: L.divIcon({ className: 'start-icon', html: '<span>起</span>', iconSize: [30, 30], iconAnchor: [15, 15] }),
+    zIndexOffset: 1000,
+  }).bindTooltip('起點：' + esc(start.label)).addTo(map);
+}
+function renderRoute() {
+  routeLayer.clearLayers();
+  const r = lastRoute;
+  const path = [[start.lat, start.lng], ...r.legs.map(l => [l.p.lat, l.p.lng])];
+  if (r.round) path.push([start.lat, start.lng]);
+  L.polyline(path, { color: css('--accent'), weight: 4, opacity: 0.85 }).addTo(routeLayer);
+  r.legs.forEach((l, i) => {
+    L.marker([l.p.lat, l.p.lng], {
+      icon: L.divIcon({ className: 'num-icon', html: `<span>${i + 1}</span>`, iconSize: [26, 26], iconAnchor: [13, 13] }),
+    }).bindTooltip(`${i + 1}. ${esc(l.p.name)}（${esc(l.p.code)}）`).addTo(routeLayer);
+  });
+  map.fitBounds(L.latLngBounds(path), { padding: [30, 30] });
+}
+function fitAll() {
+  const pts = points.filter(s => !s.invalid).map(s => [s.lat, s.lng]);
+  if (start) pts.push([start.lat, start.lng]);
+  if (pts.length) map.fitBounds(L.latLngBounds(pts), { padding: [30, 30], maxZoom: 15 });
+}
+$('fitBtn').addEventListener('click', fitAll);
+map.on('click', e => {
+  if (!picking) return;
+  setPicking(false);
+  setStart({ lat: e.latlng.lat, lng: e.latlng.lng, label: '地圖點選位置' });
+});
+window.addEventListener('resize', () => map.invalidateSize());
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { renderPointMarkers(); if (lastRoute) renderRoute(); });
+
+// ---------- 初始化 ----------
+function renderAll() { $('hideDone').checked = hideDone; renderList();renderStart(); renderMode(); renderPointMarkers(); }
+load();
+renderAll();
+if (points.length) fitAll();
+})();
+</script>
+  <script src="pwa-init.js"></script>
+</body>
+</html>

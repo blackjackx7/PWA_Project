@@ -9,8 +9,13 @@ function New-Icon([int]$size, [bool]$maskable, [bool]$rounded, [string]$name) {
   $g = [System.Drawing.Graphics]::FromImage($bmp)
   $g.SmoothingMode = 'AntiAlias'
   $rect = New-Object System.Drawing.Rectangle 0, 0, $size, $size
-  $c1 = [System.Drawing.Color]::FromArgb(220, 38, 38)
-  $c2 = [System.Drawing.Color]::FromArgb(245, 158, 11)
+  if ($App -eq 'route') {
+    $c1 = [System.Drawing.Color]::FromArgb(37, 99, 235)
+    $c2 = [System.Drawing.Color]::FromArgb(14, 165, 233)
+  } else {
+    $c1 = [System.Drawing.Color]::FromArgb(220, 38, 38)
+    $c2 = [System.Drawing.Color]::FromArgb(245, 158, 11)
+  }
   $brush = New-Object System.Drawing.Drawing2D.LinearGradientBrush $rect, $c1, $c2, 45
   if ($rounded) {
     $r = [int]($size * 0.22)
@@ -28,6 +33,15 @@ function New-Icon([int]$size, [bool]$maskable, [bool]$rounded, [string]$name) {
   $pad = if ($maskable) { 0.28 } else { 0.2 }
   $x0 = $size * $pad; $w = $size * (1 - 2*$pad)
   $y0 = $size * $pad; $h = $size * (1 - 2*$pad)
+  if ($App -eq 'route') {
+    # route icon: zig-zag path with a dot on each node
+    $pts = @(
+      (New-Object System.Drawing.PointF ($x0), ($y0 + $h*0.88)),
+      (New-Object System.Drawing.PointF ($x0 + $w*0.34), ($y0 + $h*0.36)),
+      (New-Object System.Drawing.PointF ($x0 + $w*0.68), ($y0 + $h*0.68)),
+      (New-Object System.Drawing.PointF ($x0 + $w), ($y0 + $h*0.12))
+    )
+  } else {
   $pts = @(
     (New-Object System.Drawing.PointF ($x0), ($y0 + $h*0.80)),
     (New-Object System.Drawing.PointF ($x0 + $w*0.30), ($y0 + $h*0.45)),
@@ -35,9 +49,14 @@ function New-Icon([int]$size, [bool]$maskable, [bool]$rounded, [string]$name) {
     (New-Object System.Drawing.PointF ($x0 + $w*0.80), ($y0 + $h*0.12)),
     (New-Object System.Drawing.PointF ($x0 + $w), ($y0 + $h*0.30))
   )
+  }
   $pen = New-Object System.Drawing.Pen ([System.Drawing.Color]::White), ($size * 0.075)
   $pen.StartCap = 'Round'; $pen.EndCap = 'Round'; $pen.LineJoin = 'Round'
   $g.DrawLines($pen, [System.Drawing.PointF[]]$pts)
+  if ($App -eq 'route') {
+    $dot = $size * 0.06
+    foreach ($p in $pts) { $g.FillEllipse([System.Drawing.Brushes]::White, $p.X - $dot, $p.Y - $dot, 2*$dot, 2*$dot) }
+  }
   $g.Dispose()
   $bmp.Save((Join-Path $out $name), [System.Drawing.Imaging.ImageFormat]::Png)
   $bmp.Dispose()
