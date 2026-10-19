@@ -46,13 +46,17 @@ header p{margin:2px 0 0;color:var(--muted);font-size:13px}
   grid-template-columns:minmax(0,1fr);
   grid-template-areas:"import" "start" "plan" "list" "map" "result";}
 .a-import{grid-area:import}.a-start{grid-area:start}.a-list{grid-area:list}
-.a-plan{grid-area:plan}.a-map{grid-area:map}.a-result{grid-area:result}
+.a-plan{grid-area:plan}.right{display:contents}.a-map{grid-area:map}.a-result{grid-area:result}
 @media (min-width:900px){
+  /* 電腦版：左邊是操作步驟，右邊上面是地圖、下面是路線順序，整欄固定在畫面內 */
   .layout{grid-template-columns:minmax(360px,440px) minmax(0,1fr);
-    grid-template-areas:"import map" "start map" "plan map" "list map" "result map";
-    grid-template-rows:auto auto auto auto 1fr;}
-  .a-map{align-self:start;position:sticky;top:12px;height:calc(100vh - 24px)}
+    grid-template-areas:"import right" "start right" "plan right" "list right";
+    grid-template-rows:auto auto auto 1fr;}
+  .right{display:flex;flex-direction:column;gap:12px;grid-area:right;position:sticky;top:12px;align-self:start;height:calc(100vh - 24px)}
+  .a-map{grid-area:auto;flex:1 1 auto;min-height:260px}
   #map{height:100%!important}
+  .a-result{grid-area:auto;flex:0 1 auto;max-height:45%;overflow:auto}
+  .route{max-height:none;overflow:visible}
 }
 
 .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;min-width:0}
@@ -149,8 +153,11 @@ button.warnbtn{border-color:var(--err);color:var(--err)}
 .links{display:flex;flex-direction:column;gap:6px;margin-top:10px}
 .links a{justify-content:flex-start;white-space:normal;padding:8px 12px}
 
-.num-icon span{display:flex;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;border:2px solid #fff;align-items:center;justify-content:center;font:700 12px/1 system-ui,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.35)}
-.start-icon span{display:flex;width:30px;height:30px;border-radius:50%;background:var(--start);color:#fff;border:2px solid #fff;align-items:center;justify-content:center;font:700 13px/1 system-ui,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.num-icon span,.start-icon span{position:absolute;left:0;top:0;transform:translate(-50%,-50%);display:flex;box-sizing:border-box;white-space:nowrap;color:#fff;border:2px solid #fff;align-items:center;justify-content:center}
+.num-icon span{min-width:26px;height:26px;padding:0 6px;border-radius:13px;background:var(--accent);font:700 12px/1 system-ui,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.start-icon span{min-width:30px;height:30px;padding:0 7px;border-radius:15px;background:var(--start);font:700 13px/1 system-ui,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.pop-list{max-height:260px;overflow:auto}
+.pop-list .pop + .pop{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
 </style>
 </head>
 <body>
@@ -191,6 +198,10 @@ button.warnbtn{border-color:var(--err);color:var(--err)}
       <input type="number" id="nearN" class="grow" min="1" step="1" inputmode="numeric" value="4" style="max-width:100px;min-height:40px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font:inherit;font-size:16px">
       <button id="pickNearBtn">只選取不規劃</button>
     </div>
+    <div class="seg" id="methodSeg" style="margin-bottom:10px">
+      <button data-method="chain">連鎖最近</button>
+      <button data-method="start">離起點最近</button>
+    </div>
     <div class="seg" id="modeSeg">
       <button data-mode="round">環狀（回到起點）</button>
       <button data-mode="open">單程（不回起點）</button>
@@ -215,6 +226,7 @@ button.warnbtn{border-color:var(--err);color:var(--err)}
     <div class="list" id="list"></div>
   </section>
 
+  <div class="right">
   <section class="a-map">
     <div id="map"></div>
     <div class="map-tools"><button id="fitBtn">全部顯示</button></div>
@@ -230,6 +242,7 @@ button.warnbtn{border-color:var(--err);color:var(--err)}
     <div class="links" id="links"></div>
     <ol class="route" id="route"></ol>
   </section>
+  </div>
 </main>
 
 <script src="vendor/leaflet.min.js"></script>
@@ -248,6 +261,7 @@ let start = null;    // {lat,lng,label,pointId}
 let mode = 'open';      // 預設單程
 let selMode = 'auto';   // auto：規劃時自動選離起點最近的 N 個；manual：用使用者勾選的
 let nearN = 4;
+let nearMethod = 'chain';  // chain：連鎖最近（從上一個選到的點找最近的）；start：離起點最近
 let lastRoute = null;
 let picking = false;
 
@@ -257,7 +271,7 @@ const fmtKm = m => (m / 1000).toFixed(m < 10000 ? 2 : 1);
 
 // ---------- 儲存 ----------
 function save() {
-  try { localStorage.setItem(LS_KEY, JSON.stringify({ points, start, mode, hideDone, selMode, nearN })); } catch (e) {}
+  try { localStorage.setItem(LS_KEY, JSON.stringify({ points, start, mode, hideDone, selMode, nearN, nearMethod })); } catch (e) {}
 }
 // 回傳還原狀態（讀到的字元數、錯誤訊息），開啟頁面時顯示在匯入區，方便判斷儲存有沒有生效
 function load() {
@@ -273,6 +287,7 @@ function load() {
     hideDone = !!d.hideDone;
     selMode = d.selMode === 'manual' ? 'manual' : 'auto';
     nearN = Number.isInteger(d.nearN) && d.nearN >= 1 ? d.nearN : 4;
+    nearMethod = d.nearMethod === 'start' ? 'start' : 'chain';
     return { len };
   } catch (e) {
     return { len, err: e.message };
@@ -487,7 +502,7 @@ function renderStart() {
     points.filter(s => !s.invalid).map(s => `<option value="${s.id}">${esc(s.name)}（${esc(s.code)}）</option>`).join('');
   sel.value = start && start.pointId ? start.pointId : '';
   if (start) $('startInput').value = `${start.lat.toFixed(6)}, ${start.lng.toFixed(6)}`;  // 重新整理後輸入框也帶回起點座標
-  renderStartMarker();
+  refreshOverlay();
 }
 $('startApply').addEventListener('click', () => {
   const parts = $('startInput').value.split(/[,，\s]+/).filter(Boolean);
@@ -519,8 +534,16 @@ function setSelMode(m) {
 function renderSel() {
   document.querySelectorAll('#selSeg button').forEach(b => b.classList.toggle('on', b.dataset.sel === selMode));
   $('nRow').hidden = selMode !== 'auto';
+  $('methodSeg').hidden = selMode !== 'auto';
+  document.querySelectorAll('#methodSeg button').forEach(b => b.classList.toggle('on', b.dataset.method === nearMethod));
   $('nearN').value = nearN;
 }
+$('methodSeg').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b || b.dataset.method === nearMethod) return;
+  nearMethod = b.dataset.method; save(); renderSel();
+});
+const nearDesc = () => nearMethod === 'chain' ? '連鎖最近' : '離起點最近';
 function readN() {
   const raw = $('nearN').value.trim();
   const n = Number(raw);
@@ -541,11 +564,23 @@ function applyNearest() {
   const n = readN();
   if (!n) { alertMsg('N 請輸入 1 以上的整數'); return 0; }
   nearN = n;
-  const cand = points.filter(s => !s.invalid && !s.done && s.id !== start.pointId)
-    .map(s => ({ s, d: haversine(start, s) }))
-    .sort((a, b) => a.d - b.d);
-  if (!cand.length) { alertMsg('沒有可選的地點（已完成與座標錯誤的不列入）'); return 0; }
-  const picked = new Set(cand.slice(0, n).map(x => x.s.id));
+  const pool = points.filter(s => !s.invalid && !s.done && s.id !== start.pointId);
+  if (!pool.length) { alertMsg('沒有可選的地點（已完成與座標錯誤的不列入）'); return 0; }
+  const chosen = [];
+  if (nearMethod === 'start') {
+    // 離起點最近的 N 個
+    pool.map(s => ({ s, d: haversine(start, s) })).sort((a, b) => a.d - b.d).slice(0, n).forEach(x => chosen.push(x.s));
+  } else {
+    // 連鎖最近：從起點找最近的，再從剛選到的點找最近的，依序選滿 N 個
+    let cur = start;
+    while (chosen.length < n && pool.length) {
+      let bi = 0, bd = Infinity;
+      pool.forEach((s, i) => { const d = haversine(cur, s); if (d < bd) { bd = d; bi = i; } });
+      cur = pool.splice(bi, 1)[0];
+      chosen.push(cur);
+    }
+  }
+  const picked = new Set(chosen.map(s => s.id));
   points.forEach(s => { s.checked = picked.has(s.id); });
   save(); renderList(); renderPointMarkers();
   return picked.size;
@@ -556,7 +591,7 @@ $('pickNearBtn').addEventListener('click', () => {
   if (!k) return;
   const m = $('planMsg');
   m.className = 'notice ok';
-  m.textContent = k < nearN ? `只有 ${k} 個可選，已全部選取` : `已選取離起點最近的 ${k} 個`;
+  m.textContent = k < nearN ? `只有 ${k} 個可選，已全部選取` : `已用「${nearDesc()}」選取 ${k} 個`;
 });
 
 // ---------- 模式 ----------
@@ -688,7 +723,7 @@ function plan() {
   lastRoute = { legs, back, total, exact, round };
   const m = $('planMsg');
   m.className = 'notice ok';
-  const pre = auto ? (sel.length < nearN ? `只有 ${sel.length} 個可選，已全部納入；` : `已選取離起點最近的 ${sel.length} 個；`) : '';
+  const pre = auto ? (sel.length < nearN ? `只有 ${sel.length} 個可選，已全部納入；` : `已用「${nearDesc()}」選取 ${sel.length} 個；`) : '';
   m.textContent = pre + (exact ? `已算出最短路徑（精確解，共 ${sel.length} 個地點）` : `已規劃路徑（${sel.length} 個地點，近似最佳解）`);
   renderResult(); renderRoute();
   if (window.innerWidth < 900) document.querySelector('.a-map').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -700,6 +735,8 @@ function clearRoute() {
   $('result').hidden = true;
   $('planMsg').textContent = '';
   if (routeLayer) routeLayer.clearLayers();
+  if (routeMarkerLayer) routeMarkerLayer.clearLayers();
+  if (start) renderStartMarker([]);
   if (pointLayer && map && !map.hasLayer(pointLayer)) pointLayer.addTo(map);
 }
 
@@ -794,6 +831,8 @@ L.control.layers(baseMaps, null, { position: 'topleft' }).addTo(map);
 map.on('baselayerchange', e => { curBase = e.layer; tileErrs = 0; });
 const pointLayer = L.layerGroup().addTo(map);
 const routeLayer = L.layerGroup().addTo(map);
+const routeMarkerLayer = L.layerGroup().addTo(map);
+map.on('zoomend', () => { if (lastRoute && start) drawRouteMarkers(); });
 let startMarker = null;
 
 function renderPointMarkers() {
@@ -810,13 +849,46 @@ function renderPointMarkers() {
       .addTo(pointLayer);
   });
 }
-function renderStartMarker() {
+// 起點標記與路線編號：距離很近的標記合併成一顆（例如「7·8」），避免被蓋住；縮放後會重新計算
+const MERGE_PX = 20;
+const numText = nums => nums.length <= 3 ? nums.join('·') : `${nums[0]}等${nums.length}`;
+// items: 與起點重疊的路線點 [{n, p}]，有的話起點標記顯示「起·1·2」，點一下可看到這些點
+function renderStartMarker(items) {
   if (startMarker) { startMarker.remove(); startMarker = null; }
   if (!start) return;
+  const near = items || [];
   startMarker = L.marker([start.lat, start.lng], {
-    icon: L.divIcon({ className: 'start-icon', html: '<span>起</span>', iconSize: [30, 30], iconAnchor: [15, 15] }),
+    icon: L.divIcon({ className: 'start-icon', html: `<span>${near.length ? '起·' + numText(near.map(x => x.n)) : '起'}</span>`, iconSize: [0, 0], iconAnchor: [0, 0] }),
     zIndexOffset: 1000,
   }).bindTooltip('起點：' + esc(start.label)).addTo(map);
+  if (near.length) startMarker.on('click', () => { if (!picking) openPointsPopup(near.map(x => x.p), start.lat, start.lng, near.map(x => x.n)); });
+}
+// 有路線時畫路線編號並處理起點標記，沒有路線時只畫起點
+function refreshOverlay() {
+  if (lastRoute && start) drawRouteMarkers(); else renderStartMarker([]);
+}
+function drawRouteMarkers() {
+  routeMarkerLayer.clearLayers();
+  const r = lastRoute;
+  const pt = p => map.latLngToLayerPoint([p.lat, p.lng]);
+  const sp = pt(start);
+  const groups = [], nearStart = [];
+  r.legs.forEach((l, i) => {
+    const item = { n: i + 1, p: l.p };
+    const lp = pt(l.p);
+    if (lp.distanceTo(sp) < MERGE_PX) { nearStart.push(item); return; }
+    const g = groups.find(x => x.pos.distanceTo(lp) < MERGE_PX);
+    if (g) g.items.push(item); else groups.push({ pos: lp, p: l.p, items: [item] });
+  });
+  groups.forEach(g => {
+    const nums = g.items.map(x => x.n);
+    L.marker([g.p.lat, g.p.lng], {
+      icon: L.divIcon({ className: 'num-icon', html: `<span>${numText(nums)}</span>`, iconSize: [0, 0], iconAnchor: [0, 0] }),
+    }).bindTooltip(g.items.map(x => `${x.n}. ${esc(x.p.name)}（${esc(x.p.code)}）`).join('<br>'))
+      .on('click', () => { if (!picking) openPointsPopup(g.items.map(x => x.p), g.p.lat, g.p.lng, nums); })
+      .addTo(routeMarkerLayer);
+  });
+  renderStartMarker(nearStart);
 }
 function renderRoute() {
   routeLayer.clearLayers();
@@ -824,13 +896,7 @@ function renderRoute() {
   const path = [[start.lat, start.lng], ...r.legs.map(l => [l.p.lat, l.p.lng])];
   if (r.round) path.push([start.lat, start.lng]);
   L.polyline(path, { color: css('--accent'), weight: 4, opacity: 0.85 }).addTo(routeLayer);
-  r.legs.forEach((l, i) => {
-    L.marker([l.p.lat, l.p.lng], {
-      icon: L.divIcon({ className: 'num-icon', html: `<span>${i + 1}</span>`, iconSize: [26, 26], iconAnchor: [13, 13] }),
-    }).bindTooltip(`${i + 1}. ${esc(l.p.name)}（${esc(l.p.code)}）`)
-      .on('click', () => onPointClick(l.p))
-      .addTo(routeLayer);
-  });
+  drawRouteMarkers();
   map.fitBounds(L.latLngBounds(path), { padding: [30, 30] });
 }
 
@@ -846,14 +912,23 @@ function revealInList(id) {
   row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash');
   return true;
 }
+// 點到的位置若有好幾個地點疊在一起（同地址），小視窗會全部列出，各自可標示完成
 function onPointClick(s) {
   if (picking) return;
-  openPointPopup(s);
+  const sp = map.latLngToLayerPoint([s.lat, s.lng]);
+  const list = points.filter(p => !p.invalid && map.latLngToLayerPoint([p.lat, p.lng]).distanceTo(sp) < 12);
+  openPointsPopup(list.length ? list : [s], s.lat, s.lng);
 }
-function openPointPopup(s) {
+function openPointsPopup(list, lat, lng, nums) {
+  const wrap = document.createElement('div');
+  wrap.className = 'pop-list';
+  list.forEach((s, i) => wrap.appendChild(buildPointBox(s, nums ? `${nums[i]}. ` : '')));
+  L.popup({ maxWidth: 260 }).setLatLng([lat, lng]).setContent(wrap).openOn(map);
+}
+function buildPointBox(s, prefix) {
   const box = document.createElement('div');
   box.className = 'pop';
-  box.innerHTML = `<div class="pn">${esc(s.name) || '(未命名)'}</div>
+  box.innerHTML = `<div class="pn">${prefix}${esc(s.name) || '(未命名)'}</div>
     <div class="pm">代號 ${esc(s.code) || '-'}${s.addr ? '｜' + esc(s.addr) : ''}</div>
     ${s.done ? `<div class="doneat">完成 ${esc(s.doneAt)}</div>` : ''}<div class="pb"></div>`;
   const pb = box.querySelector('.pb');
@@ -873,7 +948,7 @@ function openPointPopup(s) {
     map.closePopup();
     if (!revealInList(s.id)) notify('這一筆在清單中已隱藏（已完成）', 'warn');
   });
-  L.popup({ maxWidth: 260 }).setLatLng([s.lat, s.lng]).setContent(box).openOn(map);
+  return box;
 }
 function fitAll() {
   const pts = points.filter(s => !s.invalid).map(s => [s.lat, s.lng]);
@@ -887,6 +962,8 @@ map.on('click', e => {
   setStart({ lat: e.latlng.lat, lng: e.latlng.lng, label: '地圖點選位置' });
 });
 window.addEventListener('resize', () => map.invalidateSize());
+// 路線順序出現或隱藏時，地圖高度會跟著變，要通知地圖重新計算
+if (window.ResizeObserver) new ResizeObserver(() => map.invalidateSize()).observe($('map'));
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { renderPointMarkers(); if (lastRoute) renderRoute(); });
 
 // ---------- 初始化 ----------
