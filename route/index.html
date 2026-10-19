@@ -19,21 +19,21 @@
   --bg:#f4f5f7; --card:#ffffff; --text:#1d2330; --muted:#6b7280; --border:#dfe3e9;
   --accent:#2563eb; --accent-text:#ffffff; --accent-soft:#e8efff;
   --warn-bg:#fff6e5; --warn:#9a5a00; --err-bg:#fdecec; --err:#c62828;
-  --start:#e53935; --idle:#9aa3b2; --done:#2e8b57; --done-soft:#e6f4ec;
+  --start:#1e3a8a; --idle:#9aa3b2; --todo:#d93025; --done:#2e8b57; --done-soft:#e6f4ec;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#111419; --card:#1a1e26; --text:#e6e8ec; --muted:#9aa3b2; --border:#2c323d;
     --accent:#5b93ff; --accent-text:#ffffff; --accent-soft:#1f2a44;
     --warn-bg:#352812; --warn:#f0b75a; --err-bg:#3a1c1c; --err:#ff8a8a;
-    --start:#ff5a52; --idle:#6b7383; --done:#4cc38a; --done-soft:#1b2e24;
+    --start:#4263eb; --idle:#6b7383; --todo:#ff6b63; --done:#4cc38a; --done-soft:#1b2e24;
   }
 }
 :root[data-theme="dark"]{
   --bg:#111419; --card:#1a1e26; --text:#e6e8ec; --muted:#9aa3b2; --border:#2c323d;
   --accent:#5b93ff; --accent-text:#ffffff; --accent-soft:#1f2a44;
   --warn-bg:#352812; --warn:#f0b75a; --err-bg:#3a1c1c; --err:#ff8a8a;
-  --start:#ff5a52; --idle:#6b7383; --done:#4cc38a; --done-soft:#1b2e24;
+  --start:#4263eb; --idle:#6b7383; --todo:#ff6b63; --done:#4cc38a; --done-soft:#1b2e24;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -44,12 +44,12 @@ header p{margin:2px 0 0;color:var(--muted);font-size:13px}
 
 .layout{display:grid;gap:12px;padding:8px 16px 32px;max-width:1280px;margin:0 auto;
   grid-template-columns:minmax(0,1fr);
-  grid-template-areas:"import" "start" "list" "plan" "map" "result";}
+  grid-template-areas:"import" "start" "plan" "list" "map" "result";}
 .a-import{grid-area:import}.a-start{grid-area:start}.a-list{grid-area:list}
 .a-plan{grid-area:plan}.a-map{grid-area:map}.a-result{grid-area:result}
 @media (min-width:900px){
   .layout{grid-template-columns:minmax(360px,440px) minmax(0,1fr);
-    grid-template-areas:"import map" "start map" "list map" "plan map" "result map";
+    grid-template-areas:"import map" "start map" "plan map" "list map" "result map";
     grid-template-rows:auto auto auto auto 1fr;}
   .a-map{align-self:start;position:sticky;top:12px;height:calc(100vh - 24px)}
   #map{height:100%!important}
@@ -80,6 +80,18 @@ input[type=file]{width:100%;font:inherit;color:var(--text)}
 .start-now{margin-top:10px;font-size:14px}
 .start-now b{color:var(--start)}
 
+[hidden]{display:none!important}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--card);color:var(--text)}
+.leaflet-container a.leaflet-popup-close-button{color:var(--muted)}
+.leaflet-popup-content{margin:12px 14px}
+.pop{min-width:170px}
+.pop .pn{font-weight:700;font-size:15px;word-break:break-all}
+.pop .pm{color:var(--muted);font-size:12.5px;word-break:break-all;margin-top:2px}
+.pop .doneat{margin-top:2px}
+.pop .pb{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.pop .pb button{min-height:36px;padding:0 10px;font-size:14px}
+@keyframes flash{0%,55%{box-shadow:inset 0 0 0 3px var(--accent)}100%{box-shadow:inset 0 0 0 3px transparent}}
+.item.flash{animation:flash 1.8s ease-out}
 .seg{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
 .seg button{border:0;border-radius:0;flex:1}
 .seg button + button{border-left:1px solid var(--border)}
@@ -88,7 +100,9 @@ input[type=file]{width:100%;font:inherit;color:var(--text)}
 .count{margin-left:auto;color:var(--muted);font-size:13px}
 .list{margin-top:10px;max-height:50vh;overflow:auto;border:1px solid var(--border);border-radius:8px;-webkit-overflow-scrolling:touch}
 .list:empty::before{content:"尚未匯入資料";display:block;padding:16px;color:var(--muted);text-align:center}
-.item{display:flex;gap:10px;align-items:stretch;padding:0;border-bottom:1px solid var(--border);user-select:none}
+.item{display:flex;gap:10px;align-items:stretch;padding:0;border-bottom:1px solid var(--border);border-left:4px solid transparent;user-select:none}
+.item.todo{border-left-color:var(--todo)}
+.item.done{border-left-color:var(--done)}
 .item:last-child{border-bottom:0}
 .item .pick{display:flex;gap:10px;align-items:flex-start;flex:1;min-width:0;padding:10px 0 10px 12px;cursor:pointer}
 .item.checked{background:var(--accent-soft)}
@@ -166,8 +180,27 @@ button.warnbtn{border-color:var(--err);color:var(--err)}
     <div class="start-now" id="startNow">起點：<span style="color:var(--muted)">尚未設定</span></div>
   </section>
 
+  <section class="card a-plan">
+    <h2><span class="step">3</span>規劃路徑</h2>
+    <div class="seg" id="selSeg" style="margin-bottom:10px">
+      <button data-sel="auto">自動：最近 N 個</button>
+      <button data-sel="manual">手動：我的勾選</button>
+    </div>
+    <div class="row" id="nRow" style="margin-bottom:10px">
+      <label for="nearN" style="white-space:nowrap">N（個）</label>
+      <input type="number" id="nearN" class="grow" min="1" step="1" inputmode="numeric" value="4" style="max-width:100px;min-height:40px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font:inherit;font-size:16px">
+      <button id="pickNearBtn">只選取不規劃</button>
+    </div>
+    <div class="seg" id="modeSeg">
+      <button data-mode="round">環狀（回到起點）</button>
+      <button data-mode="open">單程（不回起點）</button>
+    </div>
+    <button class="primary block" id="planBtn" style="margin-top:10px">規劃最佳路徑</button>
+    <div class="notice" id="planMsg"></div>
+  </section>
+
   <section class="card a-list">
-    <h2><span class="step">3</span>勾選地點</h2>
+    <h2><span class="step">4</span>勾選地點</h2>
     <input type="search" id="search" placeholder="搜尋地點、代號、地址">
     <div class="row" style="margin-top:8px">
       <button id="selAll">全選</button>
@@ -180,16 +213,6 @@ button.warnbtn{border-color:var(--err);color:var(--err)}
       <button id="clearDone" class="grow">清除完成記錄</button>
     </div>
     <div class="list" id="list"></div>
-  </section>
-
-  <section class="card a-plan">
-    <h2><span class="step">4</span>規劃路徑</h2>
-    <div class="seg" id="modeSeg">
-      <button data-mode="round">環狀（回到起點）</button>
-      <button data-mode="open">單程（不回起點）</button>
-    </div>
-    <button class="primary block" id="planBtn" style="margin-top:10px">規劃最佳路徑</button>
-    <div class="notice" id="planMsg"></div>
   </section>
 
   <section class="a-map">
@@ -222,7 +245,9 @@ const GMAPS_POINTS = 10;          // Google Maps 每段連結最多點數（起�
 let points = [];   // {id,name,code,lat,lng,addr,checked,swapped,invalid,done,doneAt}
 let hideDone = false;
 let start = null;    // {lat,lng,label,pointId}
-let mode = 'round';
+let mode = 'open';      // 預設單程
+let selMode = 'auto';   // auto：規劃時自動選離起點最近的 N 個；manual：用使用者勾選的
+let nearN = 4;
 let lastRoute = null;
 let picking = false;
 
@@ -232,17 +257,26 @@ const fmtKm = m => (m / 1000).toFixed(m < 10000 ? 2 : 1);
 
 // ---------- 儲存 ----------
 function save() {
-  try { localStorage.setItem(LS_KEY, JSON.stringify({ points, start, mode, hideDone })); } catch (e) {}
+  try { localStorage.setItem(LS_KEY, JSON.stringify({ points, start, mode, hideDone, selMode, nearN })); } catch (e) {}
 }
+// 回傳還原狀態（讀到的字元數、錯誤訊息），開啟頁面時顯示在匯入區，方便判斷儲存有沒有生效
 function load() {
+  let len = 0;
   try {
-    const d = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
-    if (!d) return;
+    const raw = localStorage.getItem(LS_KEY);
+    len = raw ? raw.length : 0;
+    const d = JSON.parse(raw || 'null');
+    if (!d) return { len };
     points = Array.isArray(d.points) ? d.points : [];
     start = d.start || null;
     mode = d.mode === 'open' ? 'open' : 'round';
     hideDone = !!d.hideDone;
-  } catch (e) {}
+    selMode = d.selMode === 'manual' ? 'manual' : 'auto';
+    nearN = Number.isInteger(d.nearN) && d.nearN >= 1 ? d.nearN : 4;
+    return { len };
+  } catch (e) {
+    return { len, err: e.message };
+  }
 }
 
 // ---------- 座標 ----------
@@ -283,14 +317,20 @@ async function readWorkbook(file) {
 // 完成時間：格式 YYYY-MM-DD HH:mm，匯出與匯入共用
 const pad2 = n => String(n).padStart(2, '0');
 const fmtTime = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
-// 匯入第 6 欄：有內容就視為已完成。Excel 日期會是序號，轉回日期字串；其他文字照原樣保留
+// 匯入第 6 欄：只有「看起來像日期時間」才算已完成，其他內容（備註、狀態等）一律忽略
+// 認得：Excel 日期（序號或日期格式）、2026-10-19、2026/10/19 14:32、2026-10-19T14:32:05
 function parseDoneAt(v) {
   if (v instanceof Date && !isNaN(v)) return fmtTime(v);
-  if (typeof v === 'number' && v > 20000 && v < 80000) {
+  if (typeof v === 'number') {
+    if (!(v > 36526 && v < 80000)) return '';  // 約 2000 年到 2118 年的 Excel 序號
     const d = new Date(Math.round((v - 25569) * 864e5));
     return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())} ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`;
   }
-  return String(v ?? '').trim();
+  const m = String(v ?? '').trim().match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})(?:[ T]+(\d{1,2}):(\d{2})(?::\d{2})?)?$/);
+  if (!m) return '';
+  const [, y, mo, da, h, mi] = m;
+  if (+mo < 1 || +mo > 12 || +da < 1 || +da > 31 || (h !== undefined && (+h > 23 || +mi > 59))) return '';
+  return `${y}-${pad2(mo)}-${pad2(da)}` + (h !== undefined ? ` ${pad2(h)}:${mi}` : '');
 }
 
 // 依欄位順序讀取：地點、代號、經度、緯度、地址、完成時間（不比對表頭文字）
@@ -302,10 +342,12 @@ function rowsToPoints(rows) {
   if (width < 4) throw new Error('欄位不足，需依序為：地點、代號、經度、緯度（地址可省略）');
   // 第一列的第 3、4 欄都是數字就當資料，否則視為表頭跳過
   const body = data.length && isNum(data[0][2]) && isNum(data[0][3]) ? data : data.slice(1);
-  return body.map((r, i) => {
+  let ignored = 0;  // 第 6 欄有內容但不是日期時間的列數
+  const out = body.map((r, i) => {
     const get = k => String(r[k] ?? '').trim();
     const c = normalizeLatLng(r[3], r[2]);
     const doneAt = c.ok ? parseDoneAt(r[5]) : '';
+    if (!doneAt && get(5) !== '') ignored++;
     return {
       id: 's' + i, name: get(0), code: get(1), addr: get(4),
       lat: c.ok ? c.lat : null, lng: c.ok ? c.lng : null,
@@ -313,6 +355,8 @@ function rowsToPoints(rows) {
       done: !!doneAt, doneAt,
     };
   });
+  out.ignoredCol6 = ignored;
+  return out;
 }
 
 $('file').addEventListener('change', async e => {
@@ -325,7 +369,11 @@ $('file').addEventListener('change', async e => {
     const list = rowsToPoints(rows);
     if (!list.length) throw new Error('檔案裡沒有資料列');
     points = list;
-    if (start && start.pointId) start = null;
+    if (start && start.pointId) {
+      // 起點不因匯入而清掉。原本綁定的地點編號已不適用，新資料裡座標相同的地點就重新綁定，否則當作一般座標
+      const same = points.find(p => !p.invalid && p.lat === start.lat && p.lng === start.lng);
+      if (same) start.pointId = same.id; else delete start.pointId;
+    }
     clearRoute();
     const bad = list.filter(s => s.invalid).length, sw = list.filter(s => s.swapped).length;
     let t = `已匯入 ${list.length} 個地點`;
@@ -333,7 +381,8 @@ $('file').addEventListener('change', async e => {
     if (bad) t += `；${bad} 筆座標空白或錯誤，無法勾選`;
     const dn = list.filter(s => s.done).length;
     if (dn) t += `；${dn} 個已標示完成`;
-    msg.className = 'notice ' + (bad || sw ? 'warn' : 'ok');
+    if (list.ignoredCol6) t += `；${list.ignoredCol6} 筆第 6 欄不是日期時間，已忽略`;
+    msg.className = 'notice ' + (bad || sw || list.ignoredCol6 ? 'warn' : 'ok');
     msg.textContent = t;
     save(); renderAll(); fitAll();
   } catch (err) {
@@ -352,7 +401,7 @@ function filtered() {
 }
 function renderList() {
   $('list').innerHTML = filtered().map(s => `
-    <div class="item${s.checked ? ' checked' : ''}${s.invalid ? ' invalid' : ''}${s.done ? ' done' : ''}" data-id="${s.id}">
+    <div class="item${s.checked ? ' checked' : ''}${s.invalid ? ' invalid' : ''}${s.done ? ' done' : ''}${!s.done && !s.invalid ? ' todo' : ''}" data-id="${s.id}">
       <label class="pick">
         <input type="checkbox" class="sel" ${s.checked ? 'checked' : ''} ${s.invalid || s.done ? 'disabled' : ''}>
         <div class="body">
@@ -373,6 +422,7 @@ function updateCount() {
   if (!d) resetClearBtn();
 }
 function setChecked(ids, val) {
+  if (selMode === 'auto') setSelMode('manual');  // 手動勾選就切成手動模式，避免被自動選取蓋掉
   const set = new Set(ids);
   points.forEach(s => { if (set.has(s.id) && !s.invalid && !s.done) s.checked = val; });
   clearRoute(); save(); renderList(); renderPointMarkers();
@@ -420,6 +470,13 @@ $('selNone').addEventListener('click', () => setChecked(filtered().map(s => s.id
 // ---------- 起點 ----------
 function setStart(s) {
   start = s; clearRoute(); save(); renderStart();
+  autoPlan();
+}
+// 設好起點後直接規劃：自動模式有可選地點就跑；手動模式要已有勾選才跑
+function autoPlan() {
+  const usable = p => !p.invalid && !p.done && p.id !== start.pointId;
+  const ok = selMode === 'auto' ? points.some(usable) : points.some(p => p.checked && usable(p));
+  if (ok) plan();
 }
 function renderStart() {
   const el = $('startNow');
@@ -429,14 +486,15 @@ function renderStart() {
   sel.innerHTML = '<option value="">或選擇某個地點作為起點…</option>' +
     points.filter(s => !s.invalid).map(s => `<option value="${s.id}">${esc(s.name)}（${esc(s.code)}）</option>`).join('');
   sel.value = start && start.pointId ? start.pointId : '';
+  if (start) $('startInput').value = `${start.lat.toFixed(6)}, ${start.lng.toFixed(6)}`;  // 重新整理後輸入框也帶回起點座標
   renderStartMarker();
 }
 $('startApply').addEventListener('click', () => {
   const parts = $('startInput').value.split(/[,，\s]+/).filter(Boolean);
   const c = parts.length >= 2 ? normalizeLatLng(parts[0], parts[1]) : { ok: false };
   if (!c.ok) { alertMsg('起點格式錯誤，請輸入「緯度, 經度」'); return; }
-  setStart({ lat: c.lat, lng: c.lng, label: '自訂座標' });
   map.setView([c.lat, c.lng], Math.max(map.getZoom(), 12));
+  setStart({ lat: c.lat, lng: c.lng, label: '自訂座標' });  // 內含自動規劃，會再調整地圖範圍
 });
 $('startPoint').addEventListener('change', e => {
   const s = points.find(x => x.id === e.target.value);
@@ -452,6 +510,54 @@ function setPicking(on) {
   if (on && window.innerWidth < 900) document.querySelector('.a-map').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 function alertMsg(t) { const m = $('planMsg'); m.className = 'notice err'; m.textContent = t; }
+
+// ---------- 選取方式：自動（離起點最近 N 個）／手動 ----------
+function setSelMode(m) {
+  selMode = m;
+  save(); renderSel();
+}
+function renderSel() {
+  document.querySelectorAll('#selSeg button').forEach(b => b.classList.toggle('on', b.dataset.sel === selMode));
+  $('nRow').hidden = selMode !== 'auto';
+  $('nearN').value = nearN;
+}
+function readN() {
+  const raw = $('nearN').value.trim();
+  const n = Number(raw);
+  return raw !== '' && Number.isInteger(n) && n >= 1 ? n : null;
+}
+$('selSeg').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (b && b.dataset.sel !== selMode) setSelMode(b.dataset.sel);
+});
+$('nearN').addEventListener('input', () => {
+  const n = readN();
+  if (n) { nearN = n; save(); }
+});
+// 依直線距離挑出離起點最近的 N 個（不含已完成、座標錯誤、當作起點的那個地點），並更新勾選
+// 回傳實際選到的個數，失敗回傳 0（已顯示錯誤訊息）
+function applyNearest() {
+  if (!start) { alertMsg('請先設定起始位置'); return 0; }
+  const n = readN();
+  if (!n) { alertMsg('N 請輸入 1 以上的整數'); return 0; }
+  nearN = n;
+  const cand = points.filter(s => !s.invalid && !s.done && s.id !== start.pointId)
+    .map(s => ({ s, d: haversine(start, s) }))
+    .sort((a, b) => a.d - b.d);
+  if (!cand.length) { alertMsg('沒有可選的地點（已完成與座標錯誤的不列入）'); return 0; }
+  const picked = new Set(cand.slice(0, n).map(x => x.s.id));
+  points.forEach(s => { s.checked = picked.has(s.id); });
+  save(); renderList(); renderPointMarkers();
+  return picked.size;
+}
+$('pickNearBtn').addEventListener('click', () => {
+  clearRoute();
+  const k = applyNearest();
+  if (!k) return;
+  const m = $('planMsg');
+  m.className = 'notice ok';
+  m.textContent = k < nearN ? `只有 ${k} 個可選，已全部選取` : `已選取離起點最近的 ${k} 個`;
+});
 
 // ---------- 模式 ----------
 function renderMode() {
@@ -560,6 +666,8 @@ function heuristic(D, n, round) {
 
 function plan() {
   if (!start) { alertMsg('請先設定起始位置'); return; }
+  const auto = selMode === 'auto';
+  if (auto && !applyNearest()) return;
   const sel = points.filter(s => s.checked && !s.invalid && !s.done && s.id !== start.pointId);
   if (!sel.length) { alertMsg('請至少勾選一個地點（起點與已完成的不列入）'); return; }
 
@@ -580,7 +688,8 @@ function plan() {
   lastRoute = { legs, back, total, exact, round };
   const m = $('planMsg');
   m.className = 'notice ok';
-  m.textContent = exact ? `已算出最短路徑（精確解，共 ${sel.length} 個地點）` : `已規劃路徑（${sel.length} 個地點，近似最佳解）`;
+  const pre = auto ? (sel.length < nearN ? `只有 ${sel.length} 個可選，已全部納入；` : `已選取離起點最近的 ${sel.length} 個；`) : '';
+  m.textContent = pre + (exact ? `已算出最短路徑（精確解，共 ${sel.length} 個地點）` : `已規劃路徑（${sel.length} 個地點，近似最佳解）`);
   renderResult(); renderRoute();
   if (window.innerWidth < 900) document.querySelector('.a-map').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -689,14 +798,15 @@ let startMarker = null;
 
 function renderPointMarkers() {
   pointLayer.clearLayers();
-  const on = css('--accent'), off = css('--idle'), dn = css('--done');
+  const todo = css('--todo'), dn = css('--done');
   points.forEach(s => {
     if (s.invalid) return;
+    // 未完成紅色、已完成綠色；納入規劃的點比較大、外框加粗
     L.circleMarker([s.lat, s.lng], {
-      radius: s.checked ? 7 : 5, color: '#fff', weight: 1.5,
-      fillColor: s.done ? dn : s.checked ? on : off, fillOpacity: s.checked || s.done ? 0.95 : 0.8,
+      radius: s.checked ? 8 : 5, color: '#fff', weight: s.checked ? 3 : 1.5,
+      fillColor: s.done ? dn : todo, fillOpacity: 0.95,
     }).bindTooltip(`${esc(s.name)}（${esc(s.code)}）`)
-      .on('click', () => { if (!picking) setChecked([s.id], !s.checked); })
+      .on('click', () => onPointClick(s))
       .addTo(pointLayer);
   });
 }
@@ -717,9 +827,53 @@ function renderRoute() {
   r.legs.forEach((l, i) => {
     L.marker([l.p.lat, l.p.lng], {
       icon: L.divIcon({ className: 'num-icon', html: `<span>${i + 1}</span>`, iconSize: [26, 26], iconAnchor: [13, 13] }),
-    }).bindTooltip(`${i + 1}. ${esc(l.p.name)}（${esc(l.p.code)}）`).addTo(routeLayer);
+    }).bindTooltip(`${i + 1}. ${esc(l.p.name)}（${esc(l.p.code)}）`)
+      .on('click', () => onPointClick(l.p))
+      .addTo(routeLayer);
   });
   map.fitBounds(L.latLngBounds(path), { padding: [30, 30] });
+}
+
+// ---------- 點地圖上的地點：開小視窗（標示完成／納入）並讓清單跳到該筆 ----------
+function notify(text, kind) { const m = $('planMsg'); m.className = 'notice ' + (kind || 'ok'); m.textContent = text; }
+// 讓清單捲到該筆並短暫高亮；清單裡看不到（被隱藏）回傳 false
+function revealInList(id) {
+  const q = $('search');
+  if (q.value.trim() && !filtered().some(s => s.id === id)) { q.value = ''; renderList(); }
+  const row = [...$('list').children].find(el => el.dataset && el.dataset.id === id);
+  if (!row) return false;
+  row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash');
+  return true;
+}
+function onPointClick(s) {
+  if (picking) return;
+  openPointPopup(s);
+}
+function openPointPopup(s) {
+  const box = document.createElement('div');
+  box.className = 'pop';
+  box.innerHTML = `<div class="pn">${esc(s.name) || '(未命名)'}</div>
+    <div class="pm">代號 ${esc(s.code) || '-'}${s.addr ? '｜' + esc(s.addr) : ''}</div>
+    ${s.done ? `<div class="doneat">完成 ${esc(s.doneAt)}</div>` : ''}<div class="pb"></div>`;
+  const pb = box.querySelector('.pb');
+  const add = (label, cls, fn) => {
+    const b = document.createElement('button');
+    b.textContent = label; if (cls) b.className = cls;
+    b.addEventListener('click', fn); pb.appendChild(b);
+  };
+  add(s.done ? '取消完成' : '設為已完成', s.done ? '' : 'primary', () => {
+    map.closePopup();
+    const becoming = !s.done;
+    setDone(s.id, becoming);
+    if (becoming && hideDone) notify(`${s.name || '該地點'} 已標示完成（清單已隱藏已完成的項目）`);
+  });
+  if (!s.done) add(s.checked ? '取消納入' : '納入規劃', '', () => { map.closePopup(); setChecked([s.id], !s.checked); });
+  add('在清單中查看', '', () => {
+    map.closePopup();
+    if (!revealInList(s.id)) notify('這一筆在清單中已隱藏（已完成）', 'warn');
+  });
+  L.popup({ maxWidth: 260 }).setLatLng([s.lat, s.lng]).setContent(box).openOn(map);
 }
 function fitAll() {
   const pts = points.filter(s => !s.invalid).map(s => [s.lat, s.lng]);
@@ -736,10 +890,22 @@ window.addEventListener('resize', () => map.invalidateSize());
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { renderPointMarkers(); if (lastRoute) renderRoute(); });
 
 // ---------- 初始化 ----------
-function renderAll() { $('hideDone').checked = hideDone; renderList();renderStart(); renderMode(); renderPointMarkers(); }
-load();
-renderAll();
-if (points.length) fitAll();
+function renderAll() { $('hideDone').checked = hideDone; renderSel(); renderList();renderStart(); renderMode(); renderPointMarkers(); }
+const loaded = load();
+const initMsg = $('importMsg');
+try {
+  renderAll();
+  if (points.length) fitAll();
+  if (loaded.err) { initMsg.className = 'notice err'; initMsg.textContent = `還原失敗（儲存區有 ${loaded.len} 字元）：${loaded.err}`; }
+  else if (loaded.len) {
+    initMsg.className = 'notice ok';
+    initMsg.textContent = `已還原上次的資料：${points.length} 個地點${start ? '、起點「' + start.label + '」' : ''}（儲存區 ${loaded.len} 字元）`;
+  }
+} catch (e) {
+  initMsg.className = 'notice err';
+  initMsg.textContent = `顯示失敗（儲存區有 ${loaded.len} 字元，已讀到 ${points.length} 個地點）：${e.message}`;
+  console.error(e);
+}
 })();
 </script>
   <script src="pwa-init.js"></script>

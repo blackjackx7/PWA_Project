@@ -1,5 +1,5 @@
 // BUILD 由 scripts/sync.js 在每次同步時改寫，內容有變就會換新快取，舊快取在 activate 時清掉
-const BUILD = 'a8d7fa9a36';
+const BUILD = 'ae33cf3732';
 const CACHE = `route-${BUILD}`;
 const TILE_CACHE = 'route-tiles'; // 地圖圖磚獨立快取，換版時不清掉
 const MAX_TILES = 300;
