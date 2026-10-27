@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>追劇記錄</title>
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#000000">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="追劇記錄">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+<style>
+  /* 固定黑底，不跟系統深淺色切換 */
+  :root {
+    color-scheme: dark;
+    --bg: #000000; --card: #121212; --line: #2a2a2a; --text: #f1f5f9; --sub: #9ca3af;
+    --accent: #a78bfa; --accent-soft: #2e2550; --ok: #4ade80; --ok-soft: #12301c;
+    --warn: #fbbf24; --warn-soft: #3a2c0a; --danger: #f87171; --input: #000000;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Noto Sans TC", "Microsoft JhengHei", sans-serif; font-size: 15px; -webkit-text-size-adjust: 100%; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px calc(32px + env(safe-area-inset-bottom)); }
+
+  header { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: calc(10px + env(safe-area-inset-top)) 0 8px; }
+  .bar { display: flex; gap: 8px; align-items: center; }
+  .bar h1 { font-size: 18px; margin: 0; white-space: nowrap; }
+  .search { flex: 1; min-width: 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--input); }
+  .btn { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 8px 12px; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .btn.danger { color: var(--danger); }
+  .btn.sm { padding: 4px 10px; font-size: 13px; border-radius: 8px; }
+
+  .tabs, .filters { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 2px; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar, .filters::-webkit-scrollbar { display: none; }
+  .chip { flex: none; border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--sub); }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .filters .sep { flex: none; width: 1px; background: var(--line); margin: 2px 2px; }
+  .sortrow { display: flex; justify-content: space-between; align-items: center; color: var(--sub); font-size: 13px; padding: 6px 0; }
+  .sortrow select { border: 1px solid var(--line); background: var(--input); border-radius: 8px; padding: 3px 6px; font-size: 13px; }
+
+  .grp { display: flex; justify-content: space-between; width: 100%; margin: 6px 0 8px; padding: 8px 12px; border: 0; border-radius: 10px; background: var(--card); color: var(--sub); font-size: 14px; font-weight: 600; text-align: left; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
+  .card.finished { opacity: .75; }
+  .top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+  .title { font-size: 16px; margin: 0; word-break: break-word; }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
+  .tag { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+  .tag.st { background: var(--line); color: var(--sub); }
+  .tag.st.watching { background: var(--accent); color: #fff; }
+  .tag.st.done { background: var(--ok-soft); color: var(--ok); }
+  .cast { font-size: 13px; color: var(--sub); margin: 2px 0 6px; line-height: 1.7; }
+  .actor { border: 0; background: none; padding: 0 2px; color: var(--accent); font-size: 13px; text-decoration: underline dotted; }
+  .prior { font-size: 12px; color: var(--sub); margin-bottom: 4px; }
+  .prog { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  .prog .sn { font-weight: 700; color: var(--accent); }
+  .prog .step { width: 36px; height: 34px; border: 1px solid var(--line); background: var(--card); border-radius: 8px; font-size: 16px; }
+  .prog .step.go { background: var(--accent); border-color: var(--accent); color: #fff; width: auto; padding: 0 9px; font-weight: 600; }
+  .ep { width: 54px; padding: 6px; text-align: center; border: 1px solid var(--line); border-radius: 8px; background: var(--input); }
+  .bar2 { height: 6px; border-radius: 3px; background: var(--line); margin: 8px 0; overflow: hidden; }
+  .bar2 > i { display: block; height: 100%; background: var(--accent); }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+  .badge { padding: 1px 8px; border-radius: 6px; background: var(--warn-soft); color: var(--warn); }
+  .badge.ended { background: var(--ok-soft); color: var(--ok); }
+  .note { font-size: 13px; color: var(--sub); margin-top: 6px; white-space: pre-wrap; word-break: break-word; }
+  .meta { font-size: 12px; color: var(--sub); }
+  .empty { text-align: center; color: var(--sub); padding: 48px 0; line-height: 1.8; }
+  .foot { text-align: center; font-size: 12px; color: var(--sub); margin-top: 18px; line-height: 1.8; }
+  .foot .stale { color: var(--warn); }
+  .foot button { border: 0; background: none; color: var(--accent); text-decoration: underline; font-size: 12px; }
+
+  .mask { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 20; display: none; align-items: flex-end; justify-content: center; }
+  .mask.open { display: flex; }
+  .sheet { background: var(--bg); width: 100%; max-width: 640px; max-height: 92vh; overflow-y: auto; border-radius: 18px 18px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
+  .sheet h2 { margin: 0 0 12px; font-size: 17px; }
+  label.f { display: block; font-size: 13px; color: var(--sub); margin: 12px 0 4px; }
+  .in { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--input); }
+  textarea.in { min-height: 64px; resize: vertical; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .srow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); margin-bottom: 6px; font-size: 14px; }
+  .srow input[type=number] { width: 64px; padding: 5px; text-align: center; border: 1px solid var(--line); border-radius: 6px; background: var(--input); }
+  .srow label { display: flex; align-items: center; gap: 4px; }
+  .actions { display: flex; gap: 8px; margin-top: 18px; }
+  .actions .grow { flex: 1; }
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: #0f172a; color: #fff; padding: 8px 16px; border-radius: 999px; font-size: 13px; z-index: 30; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="bar">
+      <h1>追劇記錄</h1>
+      <input id="q" class="search" type="search" placeholder="搜尋劇名、演員、備註" autocomplete="off">
+      <button class="btn primary" id="addBtn">＋ 新增</button>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="filters" id="filters"></div>
+    <div class="filters" id="subfilters"></div>
+    <div class="filters" id="platfilters"></div>
+  </header>
+
+  <div class="sortrow">
+    <span id="count"></span>
+    <label>排序 <select id="sort">
+      <option value="recent">最近更新</option>
+      <option value="title">劇名</option>
+      <option value="created">加入時間</option>
+    </select></label>
+  </div>
+
+  <div id="list"></div>
+
+  <div class="foot">
+    <div id="backupNote"></div>
+    <button id="exportBtn">匯出備份</button> ·
+    <button id="importBtn">匯入備份</button>
+    <input type="file" id="importFile" accept=".json,application/json" hidden>
+    <div>資料只存在這個瀏覽器，換手機或清除資料前請先匯出備份</div>
+  </div>
+</div>
+
+<div class="mask" id="mask">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <h2 id="formTitle">新增劇集</h2>
+    <label class="f" for="fTitle">劇名</label>
+    <input id="fTitle" class="in" autocomplete="off">
+
+    <div class="grid3">
+      <div><label class="f" for="fLang">語言</label>
+        <select id="fLang" class="in"><option value="foreign">外語</option><option value="zh">中文</option></select></div>
+      <div><label class="f" for="fLen">長度</label>
+        <select id="fLen" class="in"><option value="long">長劇</option><option value="short">短劇</option></select></div>
+      <div><label class="f" for="fKind">形式</label>
+        <select id="fKind" class="in"><option value="live">真人</option><option value="ai">AI</option></select></div>
+    </div>
+
+    <div id="regionBox">
+      <label class="f" for="fRegion">外語地區</label>
+      <select id="fRegion" class="in"><option value="">未分類</option></select>
+    </div>
+
+    <label class="f" for="fPlatform">平台</label>
+    <select id="fPlatform" class="in"></select>
+
+    <label class="f" for="fStatus">狀態</label>
+    <select id="fStatus" class="in">
+      <option value="want">想看</option><option value="watching">追劇中</option>
+      <option value="done">全劇完結</option><option value="dropped">棄劇</option>
+    </select>
+
+    <div id="castBox">
+      <label class="f" for="fCast">演員（用逗號、頓號或換行分開）</label>
+      <textarea id="fCast" class="in" list="castList" placeholder="例：宋慧喬、李到晛"></textarea>
+    </div>
+    <datalist id="castList"></datalist>
+
+    <label class="f">各季進度（看到第幾集 / 該季總集數 / 該季是否已完結）</label>
+    <div id="seasons"></div>
+    <button class="btn sm" id="addSeason" type="button">＋ 新增一季</button>
+
+    <label class="f" for="fNote">備註</label>
+    <textarea id="fNote" class="in" placeholder="在哪個平台看、心得…"></textarea>
+
+    <div class="actions">
+      <button class="btn danger" id="delBtn" type="button">刪除</button>
+      <span class="grow"></span>
+      <button class="btn" id="cancelBtn" type="button">取消</button>
+      <button class="btn primary" id="saveBtn" type="button">儲存</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const KEY = 'drama_v1';
+  const BACKUP_KEY = 'drama_last_backup';
+  const LANG = { foreign: '外語', zh: '中文' };
+  const LEN = { long: '長劇', short: '短劇' };
+  const KIND = { live: '真人', ai: 'AI' };
+  const PLATFORM = { netflix: 'Netflix', mod: 'MOD', youtube: 'YouTube', other: '其他' };
+  const REGION = { kr: '韓劇', jp: '日劇', west: '歐美', other: '其他' }; // 只有外語才有，'' 代表未分類
+  const STATUS = { want: '想看', watching: '追劇中', done: '全劇完結', dropped: '棄劇' };
+  const STALE_DAYS = 14;
+
+  let shows = [];
+  let editingId = null;
+  const ui = { q: '', status: 'all', lang: 'all', region: 'all', platform: 'all', len: 'all', kind: 'all', sort: 'recent' };
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const num = (v) => Math.max(0, Math.floor(Number(v) || 0));
+
+  function load() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(KEY) || '[]');
+      shows = Array.isArray(raw) ? raw.map(normalize) : [];
+    } catch (e) { shows = []; }
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(shows)); }
+    catch (e) { toast('儲存失敗，瀏覽器可能封鎖了儲存空間'); }
+  }
+  function normalize(s) {
+    const seasons = (Array.isArray(s.seasons) && s.seasons.length ? s.seasons : [{ n: 1 }])
+      .map((x, i) => ({ n: num(x.n) || i + 1, watched: num(x.watched), total: num(x.total), ended: !!x.ended }))
+      .sort((a, b) => a.n - b.n);
+    // 有第 N 季就一定有 1～N-1 季：缺的自動補上，視為已完結、集數未知
+    const have = new Set(seasons.map((x) => x.n));
+    const maxN = seasons[seasons.length - 1].n;
+    for (let n = 1; n < maxN; n++) {
+      if (!have.has(n)) seasons.push({ n, watched: 0, total: 0, ended: true });
+    }
+    seasons.sort((a, b) => a.n - b.n);
+    return {
+      id: s.id || uid(),
+      title: String(s.title || '').trim() || '(未命名)',
+      lang: LANG[s.lang] ? s.lang : 'foreign',
+      region: s.lang === 'foreign' && REGION[s.region] ? s.region : '',
+      platform: PLATFORM[s.platform] ? s.platform : 'netflix',
+      len: LEN[s.len] ? s.len : 'long',
+      kind: KIND[s.kind] ? s.kind : 'live',
+      status: STATUS[s.status] ? s.status : 'watching',
+      cast: Array.isArray(s.cast) ? s.cast.map((x) => String(x).trim()).filter(Boolean) : [],
+      note: String(s.note || ''),
+      seasons,
+      created: s.created || Date.now(),
+      updated: s.updated || Date.now()
+    };
+  }
+  const cur = (s) => s.seasons[s.seasons.length - 1];
+
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast.t);
+    toast.t = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ---------- 篩選與繪製 ----------
+  // 語言／地區／長度／形式四組篩選（不含狀態與搜尋）
+  function passFilters(s) {
+    return (ui.lang === 'all' || s.lang === ui.lang) && (ui.region === 'all' || s.region === ui.region) && (ui.platform === 'all' || s.platform === ui.platform) &&
+      (ui.len === 'all' || s.len === ui.len) && (ui.kind === 'all' || s.kind === ui.kind);
+  }
+  function matches(s) {
+    if (ui.status !== 'all' && s.status !== ui.status) return false;
+    if (!passFilters(s)) return false;
+    const terms = ui.q.toLowerCase().split(/\s+/).filter(Boolean);
+    if (!terms.length) return true;
+    const hay = [s.title, s.cast.join(' '), s.note, LANG[s.lang], REGION[s.region] || '', PLATFORM[s.platform], LEN[s.len], KIND[s.kind], STATUS[s.status]].join(' ').toLowerCase();
+    return terms.every((t) => hay.includes(t));
+  }
+
+  function renderTabs() {
+    const base = shows.filter(passFilters);
+    const count = (k) => (k === 'all' ? base.length : base.filter((s) => s.status === k).length);
+    $('tabs').innerHTML = [['all', '全部'], ...Object.entries(STATUS)]
+      .map(([k, label]) => `<button class="chip ${ui.status === k ? 'on' : ''}" data-tab="${k}">${label} ${count(k)}</button>`).join('');
+    const group = (key, map, all) => `<button class="chip ${ui[key] === 'all' ? 'on' : ''}" data-f="${key}" data-v="all">${all}</button>` +
+      Object.entries(map).map(([k, label]) => `<button class="chip ${ui[key] === k ? 'on' : ''}" data-f="${key}" data-v="${k}">${label}</button>`).join('');
+    $('filters').innerHTML = group('lang', LANG, '全部語言') + '<i class="sep"></i>' + group('len', LEN, '全部長度') + '<i class="sep"></i>' + group('kind', KIND, '真人+AI');
+    // 第二層：只在選了「外語」時出現
+    $('subfilters').style.display = ui.lang === 'foreign' ? '' : 'none';
+    $('subfilters').innerHTML = group('region', REGION, '全部外語');
+    $('platfilters').innerHTML = group('platform', PLATFORM, '全部平台');
+  }
+
+  function cardHtml(s) {
+    const c = cur(s);
+    const prior = s.seasons.slice(0, -1).map((x) => `S${x.n}${x.watched || x.total ? ` ${x.watched}${x.total ? '/' + x.total : ''} 集` : ''}${x.ended ? '・完結' : ''}`).join('　');
+    const pct = c.total ? Math.min(100, Math.round((c.watched / c.total) * 100)) : 0;
+    const cast = s.kind === 'live' && s.cast.length
+      ? `<div class="cast">演員：${s.cast.map((n) => `<button class="actor" data-act="actor" data-name="${esc(n)}">${esc(n)}</button>`).join('、')}</div>` : '';
+    return `<article class="card ${s.status === 'done' || s.status === 'dropped' ? 'finished' : ''}" data-id="${s.id}">
+      <div class="top"><h3 class="title">${esc(s.title)}</h3><button class="btn sm" data-act="edit">編輯</button></div>
+      <div class="tags"><span class="tag">${LANG[s.lang]}${s.region ? '・' + REGION[s.region] : ''}</span><span class="tag">${LEN[s.len]}</span><span class="tag">${KIND[s.kind]}</span><span class="tag">${PLATFORM[s.platform]}</span><span class="tag st ${s.status}">${STATUS[s.status]}</span></div>
+      ${cast}
+      ${prior ? `<div class="prior">${esc(prior)}</div>` : ''}
+      <div class="prog">
+        <span class="sn">S${c.n}</span>
+        <button class="step" data-act="inc" data-d="-1" aria-label="少一集">−</button>
+        第 <input class="ep" type="number" min="0" inputmode="numeric" value="${c.watched}" data-act="set" aria-label="看到第幾集">${c.total ? ` / ${c.total}` : ''} 集
+        <button class="step go" data-act="inc" data-d="1">+1</button>
+        ${s.len === 'short' ? '<button class="step go" data-act="inc" data-d="10">+10</button>' : ''}
+      </div>
+      ${c.total ? `<div class="bar2"><i style="width:${pct}%"></i></div>` : '<div style="height:8px"></div>'}
+      <div class="row">
+        <span class="badge ${c.ended ? 'ended' : ''}">${c.ended ? `第 ${c.n} 季已完結` : `第 ${c.n} 季連載中`}</span>
+        <button class="btn sm" data-act="end">${c.ended ? '取消完結' : '標為本季完結'}</button>
+        ${c.ended ? '<button class="btn sm" data-act="next">開下一季</button>' : ''}
+        ${s.status === 'done' || s.status === 'dropped' ? '<button class="btn sm" data-act="resume">恢復追劇</button>' : '<button class="btn sm" data-act="finish">全劇完結</button>'}
+      </div>
+      ${s.note ? `<div class="note">${esc(s.note)}</div>` : ''}
+      <div class="meta" style="margin-top:6px">更新 ${new Date(s.updated).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })}</div>
+    </article>`;
+  }
+
+  // 「全部」分頁依狀態分組，組標題可點擊收合；完結、棄劇預設收起，收合狀態記在 localStorage
+  const GROUP_ORDER = ['watching', 'want', 'done', 'dropped'];
+  const COLLAPSE_KEY = 'drama_collapsed';
+  function getCollapsed() {
+    try { return JSON.parse(localStorage.getItem(COLLAPSE_KEY)) || { done: true, dropped: true }; }
+    catch (e) { return { done: true, dropped: true }; }
+  }
+  function groupHtml(list) {
+    const collapsed = getCollapsed();
+    const searching = ui.q.trim() !== ''; // 搜尋時一律展開，避免結果藏在收起的組裡
+    return GROUP_ORDER.map((st) => {
+      const items = list.filter((s) => s.status === st);
+      if (!items.length) return '';
+      const closed = !searching && !!collapsed[st];
+      return `<button class="grp" data-grp="${st}" aria-expanded="${!closed}"><span>${STATUS[st]} ${items.length}</span><span>${closed ? '▸' : '▾'}</span></button>` +
+        (closed ? '' : items.map(cardHtml).join(''));
+    }).join('');
+  }
+
+  function render() {
+    renderTabs();
+    const list = shows.filter(matches).sort((a, b) =>
+      ui.sort === 'title' ? a.title.localeCompare(b.title, 'zh-Hant')
+        : ui.sort === 'created' ? b.created - a.created : b.updated - a.updated);
+    $('count').textContent = `共 ${list.length} 部`;
+    const grouped = ui.status === 'all' && list.length;
+    $('list').innerHTML = !list.length ? `<div class="empty">${shows.length ? '沒有符合的劇<br>調整搜尋或篩選看看' : '還沒有任何記錄<br>按右上角「＋ 新增」開始'}</div>`
+      : grouped ? groupHtml(list) : list.map(cardHtml).join('');
+    renderBackupNote();
+  }
+
+  function renderBackupNote() {
+    let last = 0;
+    try { last = Number(localStorage.getItem(BACKUP_KEY)) || 0; } catch (e) { /* ignore */ }
+    const el = $('backupNote');
+    if (!shows.length) { el.textContent = ''; return; }
+    const days = last ? Math.floor((Date.now() - last) / 86400000) : Infinity;
+    el.className = days > STALE_DAYS ? 'stale' : '';
+    el.textContent = last ? `上次匯出備份：${new Date(last).toLocaleDateString('zh-TW')}${days > STALE_DAYS ? '（建議再備份一次）' : ''}` : '尚未匯出過備份';
+  }
+
+  // ---------- 卡片操作 ----------
+  function touch(s) { s.updated = Date.now(); save(); render(); }
+  function bump(s, d) {
+    const c = cur(s);
+    let w = Math.max(0, c.watched + d);
+    if (c.total) w = Math.min(w, c.total);
+    c.watched = w;
+    if (s.status === 'want' && w > 0) s.status = 'watching';
+    touch(s);
+  }
+
+  $('list').addEventListener('click', (e) => {
+    const g = e.target.closest('[data-grp]');
+    if (g) {
+      const c = getCollapsed();
+      c[g.dataset.grp] = !c[g.dataset.grp];
+      try { localStorage.setItem(COLLAPSE_KEY, JSON.stringify(c)); } catch (err) { /* ignore */ }
+      render();
+      return;
+    }
+    const btn = e.target.closest('[data-act]');
+    if (!btn || btn.tagName === 'INPUT') return;
+    const card = btn.closest('.card');
+    const s = card && shows.find((x) => x.id === card.dataset.id);
+    const act = btn.dataset.act;
+    if (act === 'actor') { ui.q = btn.dataset.name; $('q').value = ui.q; render(); window.scrollTo(0, 0); return; }
+    if (!s) return;
+    if (act === 'edit') openForm(s);
+    else if (act === 'inc') bump(s, Number(btn.dataset.d));
+    else if (act === 'end') { const c = cur(s); c.ended = !c.ended; touch(s); }
+    else if (act === 'finish') { s.status = 'done'; cur(s).ended = true; touch(s); toast('已標為全劇完結'); }
+    else if (act === 'resume') { s.status = 'watching'; touch(s); }
+    else if (act === 'next') {
+      const c = cur(s);
+      s.seasons.push({ n: c.n + 1, watched: 0, total: 0, ended: false });
+      if (s.status === 'done') s.status = 'watching';
+      touch(s);
+      toast(`已開 S${c.n + 1}`);
+    }
+  });
+  $('list').addEventListener('change', (e) => {
+    if (e.target.dataset.act !== 'set') return;
+    const s = shows.find((x) => x.id === e.target.closest('.card').dataset.id);
+    if (!s) return;
+    const c = cur(s);
+    bump(s, num(e.target.value) - c.watched);
+  });
+  $('list').addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.dataset.act === 'set') e.target.blur(); });
+
+  // ---------- 搜尋與篩選事件 ----------
+  $('q').addEventListener('input', (e) => { ui.q = e.target.value; render(); });
+  $('sort').addEventListener('change', (e) => { ui.sort = e.target.value; render(); });
+  $('tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) { ui.status = b.dataset.tab; render(); } });
+  [$('filters'), $('subfilters'), $('platfilters')].forEach((box) => box.addEventListener('click', (e) => { const b = e.target.closest('[data-f]'); if (b) { ui[b.dataset.f] = b.dataset.v; if (ui.lang !== 'foreign') ui.region = 'all'; render(); } }));
+
+  // ---------- 新增／編輯表單 ----------
+  function seasonRow(x) {
+    return `<div class="srow">
+      第 <input type="number" min="1" value="${x.n}" data-k="n"> 季　看到第 <input type="number" min="0" value="${x.watched}" data-k="watched"> 集
+      / 共 <input type="number" min="0" value="${x.total || ''}" placeholder="?" data-k="total"> 集
+      <label><input type="checkbox" data-k="ended" ${x.ended ? 'checked' : ''}>該季已完結</label>
+      <button class="btn sm danger" type="button" data-del>移除</button>
+    </div>`;
+  }
+  function readSeasons() {
+    return [...$('seasons').querySelectorAll('.srow')].map((r) => {
+      const v = (k) => r.querySelector(`[data-k="${k}"]`);
+      return { n: num(v('n').value) || 1, watched: num(v('watched').value), total: num(v('total').value), ended: v('ended').checked };
+    });
+  }
+  function writeSeasons(arr) { $('seasons').innerHTML = arr.map(seasonRow).join(''); }
+  function syncKind() {
+    $('castBox').style.display = $('fKind').value === 'live' ? '' : 'none';
+    $('regionBox').style.display = $('fLang').value === 'foreign' ? '' : 'none';
+  }
+
+  function openForm(s) {
+    editingId = s ? s.id : null;
+    $('formTitle').textContent = s ? '編輯劇集' : '新增劇集';
+    $('fTitle').value = s ? s.title : '';
+    $('fLang').value = s ? s.lang : ui.lang !== 'all' ? ui.lang : 'zh';
+    $('fRegion').value = s ? s.region : ui.region !== 'all' ? ui.region : '';
+    $('fPlatform').value = s ? s.platform : ui.platform !== 'all' ? ui.platform : 'netflix';
+    $('fLen').value = s ? s.len : ui.len !== 'all' ? ui.len : 'long';
+    $('fKind').value = s ? s.kind : ui.kind !== 'all' ? ui.kind : 'live';
+    $('fStatus').value = s ? s.status : 'watching';
+    $('fCast').value = s ? s.cast.join('、') : '';
+    $('fNote').value = s ? s.note : '';
+    writeSeasons(s ? s.seasons : [{ n: 1, watched: 0, total: 0, ended: false }]);
+    $('delBtn').style.display = s ? '' : 'none';
+    $('castList').innerHTML = [...new Set(shows.flatMap((x) => x.cast))].map((n) => `<option value="${esc(n)}">`).join('');
+    syncKind();
+    $('mask').classList.add('open');
+    if (!s) $('fTitle').focus();
+  }
+  const closeForm = () => $('mask').classList.remove('open');
+
+  $('addBtn').addEventListener('click', () => openForm(null));
+  $('cancelBtn').addEventListener('click', closeForm);
+  $('mask').addEventListener('click', (e) => { if (e.target === $('mask')) closeForm(); });
+  $('fKind').addEventListener('change', syncKind);
+  $('fLang').addEventListener('change', () => {
+    if ($('fLang').value === 'foreign' && !$('fRegion').value) $('fRegion').value = 'west'; // 外語預設歐美
+    syncKind();
+  });
+  $('fPlatform').innerHTML = Object.entries(PLATFORM).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+  $('fRegion').innerHTML += Object.entries(REGION).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+  $('addSeason').addEventListener('click', () => {
+    const arr = readSeasons();
+    arr.push({ n: Math.max(0, ...arr.map((x) => x.n)) + 1, watched: 0, total: 0, ended: false });
+    writeSeasons(arr);
+  });
+  $('seasons').addEventListener('click', (e) => {
+    if (!e.target.matches('[data-del]')) return;
+    if ($('seasons').children.length <= 1) { toast('至少要保留一季'); return; }
+    e.target.closest('.srow').remove();
+  });
+
+  $('saveBtn').addEventListener('click', () => {
+    const title = $('fTitle').value.trim();
+    if (!title) { toast('請輸入劇名'); $('fTitle').focus(); return; }
+    const seasons = readSeasons();
+    if (new Set(seasons.map((x) => x.n)).size !== seasons.length) { toast('季數不能重複'); return; }
+    for (const x of seasons) if (x.total && x.watched > x.total) x.watched = x.total;
+    const kind = $('fKind').value;
+    const data = {
+      title, lang: $('fLang').value, region: $('fRegion').value, platform: $('fPlatform').value, len: $('fLen').value, kind, status: $('fStatus').value,
+      cast: kind === 'live' ? $('fCast').value.split(/[,，、\n]/).map((x) => x.trim()).filter(Boolean) : [],
+      note: $('fNote').value.trim(), seasons
+    };
+    const old = editingId && shows.find((x) => x.id === editingId);
+    if (old) Object.assign(old, normalize({ ...old, ...data, updated: Date.now() }));
+    else shows.push(normalize({ ...data, created: Date.now(), updated: Date.now() }));
+    const filled = shows.find((x) => x.id === (old ? old.id : shows[shows.length - 1].id)).seasons.length - seasons.length;
+    if (filled > 0) toast(`已自動補上前 ${filled} 季（標為已完結）`);
+    save();
+    closeForm();
+    render();
+  });
+  $('delBtn').addEventListener('click', () => {
+    const s = shows.find((x) => x.id === editingId);
+    if (!s || !confirm(`確定刪除「${s.title}」？`)) return;
+    shows = shows.filter((x) => x.id !== editingId);
+    save();
+    closeForm();
+    render();
+  });
+
+  // ---------- 匯出／匯入 ----------
+  $('exportBtn').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify({ app: 'drama', version: 1, exported: new Date().toISOString(), shows }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `追劇記錄_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    try { localStorage.setItem(BACKUP_KEY, String(Date.now())); } catch (e) { /* ignore */ }
+    renderBackupNote();
+  });
+  $('importBtn').addEventListener('click', () => $('importFile').click());
+  $('importFile').addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      if (!data || data.app !== 'drama' || !Array.isArray(data.shows)) throw new Error('格式不符');
+      let added = 0, updated = 0;
+      for (const raw of data.shows.map(normalize)) {
+        const i = shows.findIndex((x) => x.id === raw.id);
+        if (i < 0) { shows.push(raw); added++; }
+        else if (raw.updated > shows[i].updated) { shows[i] = raw; updated++; }
+      }
+      save();
+      render();
+      toast(`匯入完成：新增 ${added} 部、更新 ${updated} 部`);
+    } catch (err) { toast('匯入失敗：不是有效的追劇記錄備份檔'); }
+  });
+
+  load();
+  render();
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+})();
+</script>
+  <script src="pwa-init.js"></script>
+</body>
+</html>

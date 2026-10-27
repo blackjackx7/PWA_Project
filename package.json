@@ -5,6 +5,8 @@
   "scripts": {
     "sync:stock": "node scripts/sync.js stock",
     "sync:route": "node scripts/sync.js route",
+    "sync:drama": "node scripts/sync.js drama",
+    "icons:drama": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/make-icons.ps1 -App drama",
     "icons": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/make-icons.ps1 -App stock",
     "icons:route": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/make-icons.ps1 -App route"
   },

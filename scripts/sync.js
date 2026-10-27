@@ -33,6 +33,13 @@ const APPS = {
       ['Leaflet CDN', /https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/leaflet\/[\d.]+\/leaflet\.min\.js/, 'vendor/leaflet.min.js'],
       ['SheetJS CDN', /https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/xlsx\/[\d.]+\/xlsx\.full\.min\.js/, 'vendor/xlsx.full.min.js']
     ]
+  },
+  drama: {
+    src: path.join('..', 'bj-tools', '追劇記錄.html'),
+    tailwind: false,
+    title: '追劇記錄',
+    theme: '#000000',
+    cdn: []
   }
 };
 const appName = process.argv[2] || 'stock';
