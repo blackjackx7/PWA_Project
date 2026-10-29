@@ -1,11 +1,11 @@
 // 由 scripts/generate-sw.mjs 在 build 時產生，請勿手改
-const BUILD = '067628e1d4';
+const BUILD = 'b4017af8cb';
 const CACHE = `elements-${BUILD}`;
 // 圖片快取不跟版本走（換版不清掉）；圖片內容若改了，要換這個名稱才會重新下載
 const IMG_CACHE = 'elements-img-v1';
 const MAX_IMAGES = 60;
 
-const PRECACHE = ['./', 'assets/index-D5eLWlD-.js', 'assets/index-DGD6ZaZM.css', 'icons/apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'index.html', 'manifest.webmanifest'];
+const PRECACHE = ['./', 'assets/index-BYz8-T2Y.js', 'assets/index-DGD6ZaZM.css', 'icons/apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'index.html', 'manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
