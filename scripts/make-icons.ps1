@@ -12,9 +12,6 @@ function New-Icon([int]$size, [bool]$maskable, [bool]$rounded, [string]$name) {
   if ($App -eq 'route') {
     $c1 = [System.Drawing.Color]::FromArgb(37, 99, 235)
     $c2 = [System.Drawing.Color]::FromArgb(14, 165, 233)
-  } elseif ($App -eq 'drama') {
-    $c1 = [System.Drawing.Color]::FromArgb(124, 58, 237)
-    $c2 = [System.Drawing.Color]::FromArgb(236, 72, 153)
   } else {
     $c1 = [System.Drawing.Color]::FromArgb(220, 38, 38)
     $c2 = [System.Drawing.Color]::FromArgb(245, 158, 11)
@@ -44,13 +41,6 @@ function New-Icon([int]$size, [bool]$maskable, [bool]$rounded, [string]$name) {
       (New-Object System.Drawing.PointF ($x0 + $w*0.68), ($y0 + $h*0.68)),
       (New-Object System.Drawing.PointF ($x0 + $w), ($y0 + $h*0.12))
     )
-  } elseif ($App -eq 'drama') {
-    # drama icon: filled play triangle (drawn below, not as a line)
-    $pts = @(
-      (New-Object System.Drawing.PointF ($x0 + $w*0.12), ($y0)),
-      (New-Object System.Drawing.PointF ($x0 + $w*0.12), ($y0 + $h)),
-      (New-Object System.Drawing.PointF ($x0 + $w*0.98), ($y0 + $h*0.5))
-    )
   } else {
   $pts = @(
     (New-Object System.Drawing.PointF ($x0), ($y0 + $h*0.80)),
@@ -62,12 +52,7 @@ function New-Icon([int]$size, [bool]$maskable, [bool]$rounded, [string]$name) {
   }
   $pen = New-Object System.Drawing.Pen ([System.Drawing.Color]::White), ($size * 0.075)
   $pen.StartCap = 'Round'; $pen.EndCap = 'Round'; $pen.LineJoin = 'Round'
-  if ($App -eq 'drama') {
-    $g.FillPolygon([System.Drawing.Brushes]::White, [System.Drawing.PointF[]]$pts)
-    $g.DrawPolygon($pen, [System.Drawing.PointF[]]$pts)
-  } else {
-    $g.DrawLines($pen, [System.Drawing.PointF[]]$pts)
-  }
+  $g.DrawLines($pen, [System.Drawing.PointF[]]$pts)
   if ($App -eq 'route') {
     $dot = $size * 0.06
     foreach ($p in $pts) { $g.FillEllipse([System.Drawing.Brushes]::White, $p.X - $dot, $p.Y - $dot, 2*$dot, 2*$dot) }
