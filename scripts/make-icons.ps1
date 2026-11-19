@@ -9,7 +9,10 @@ function New-Icon([int]$size, [bool]$maskable, [bool]$rounded, [string]$name) {
   $g = [System.Drawing.Graphics]::FromImage($bmp)
   $g.SmoothingMode = 'AntiAlias'
   $rect = New-Object System.Drawing.Rectangle 0, 0, $size, $size
-  if ($App -eq 'route') {
+  if ($App -eq 'fx') {
+    $c1 = [System.Drawing.Color]::FromArgb(2, 132, 199)
+    $c2 = [System.Drawing.Color]::FromArgb(20, 184, 166)
+  } elseif ($App -eq 'route') {
     $c1 = [System.Drawing.Color]::FromArgb(37, 99, 235)
     $c2 = [System.Drawing.Color]::FromArgb(14, 165, 233)
   } else {
@@ -33,7 +36,10 @@ function New-Icon([int]$size, [bool]$maskable, [bool]$rounded, [string]$name) {
   $pad = if ($maskable) { 0.28 } else { 0.2 }
   $x0 = $size * $pad; $w = $size * (1 - 2*$pad)
   $y0 = $size * $pad; $h = $size * (1 - 2*$pad)
-  if ($App -eq 'route') {
+  if ($App -eq 'fx') {
+    # fx icon: two opposite arrows (exchange)
+    $pts = @()
+  } elseif ($App -eq 'route') {
     # route icon: zig-zag path with a dot on each node
     $pts = @(
       (New-Object System.Drawing.PointF ($x0), ($y0 + $h*0.88)),
@@ -52,7 +58,17 @@ function New-Icon([int]$size, [bool]$maskable, [bool]$rounded, [string]$name) {
   }
   $pen = New-Object System.Drawing.Pen ([System.Drawing.Color]::White), ($size * 0.075)
   $pen.StartCap = 'Round'; $pen.EndCap = 'Round'; $pen.LineJoin = 'Round'
-  $g.DrawLines($pen, [System.Drawing.PointF[]]$pts)
+  if ($App -eq 'fx') {
+    $ya = $y0 + $h*0.32; $yb = $y0 + $h*0.68; $ah = $w*0.2
+    $g.DrawLine($pen, $x0, $ya, $x0+$w, $ya)
+    $g.DrawLine($pen, $x0+$w-$ah, $ya-$ah, $x0+$w, $ya)
+    $g.DrawLine($pen, $x0+$w-$ah, $ya+$ah, $x0+$w, $ya)
+    $g.DrawLine($pen, $x0, $yb, $x0+$w, $yb)
+    $g.DrawLine($pen, $x0+$ah, $yb-$ah, $x0, $yb)
+    $g.DrawLine($pen, $x0+$ah, $yb+$ah, $x0, $yb)
+  } else {
+    $g.DrawLines($pen, [System.Drawing.PointF[]]$pts)
+  }
   if ($App -eq 'route') {
     $dot = $size * 0.06
     foreach ($p in $pts) { $g.FillEllipse([System.Drawing.Brushes]::White, $p.X - $dot, $p.Y - $dot, 2*$dot, 2*$dot) }

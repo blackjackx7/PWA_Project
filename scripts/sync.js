@@ -24,6 +24,15 @@ const APPS = {
       ['Chart.js CDN', /https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/Chart\.js\/[\d.]+\/chart\.umd\.min\.js/, 'vendor/chart.umd.min.js']
     ]
   },
+  fx: {
+    src: path.join('..', 'bj-tools', '台銀匯率即時更新.html'),
+    tailwind: true,
+    title: '台銀匯率',
+    theme: '#0284c7',
+    cdn: [
+      ['Font Awesome CDN', /https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/font-awesome\/[\d.]+\/css\/all\.min\.css/, 'vendor/fontawesome/css/all.min.css']
+    ]
+  },
   route: {
     src: path.join('..', 'bj-tools', '路線規劃.html'),
     tailwind: false,

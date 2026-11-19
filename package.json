@@ -5,8 +5,10 @@
   "scripts": {
     "sync:stock": "node scripts/sync.js stock",
     "sync:route": "node scripts/sync.js route",
+    "sync:fx": "node scripts/sync.js fx",
     "icons": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/make-icons.ps1 -App stock",
-    "icons:route": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/make-icons.ps1 -App route"
+    "icons:route": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/make-icons.ps1 -App route",
+    "icons:fx": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/make-icons.ps1 -App fx"
   },
   "repository": {
     "type": "git",

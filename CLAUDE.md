@@ -7,6 +7,7 @@
 | 資料夾 | 應用 | 來源（唯一的程式碼來源） |
 |---|---|---|
 | `stock/` | 台灣股票監控工具 | `../bj-tools/台灣股票.html` |
+| `fx/` | 台銀匯率換算（牌告匯率、現金／即期、交叉匯率） | `../bj-tools/台銀匯率即時更新.html` |
 | `route/` | 路線規劃（依直線距離排最短順序、標示完成） | 不在本 repo，規則同上 |
 | `elements/` | 繁體中文版元素週期表（PWA，圖片看過才快取） | 上游 [SeanWong17/Future-Style-Periodic-Table](https://github.com/SeanWong17/Future-Style-Periodic-Table)（MIT）的繁體中文 fork，Vite 專案，原始碼不在本 repo，不走 `sync.js` |
 
@@ -22,7 +23,7 @@
 1. 建同名子資料夾，放該應用的 `icons/`（可用 `scripts/make-icons.ps1 -App <名稱>` 產生）與 `vendor/` 等靜態資源。
 2. 在 `scripts/sync.js` 的 `APPS` 加一行（來源 HTML 路徑），在 `package.json` 加 `sync:<名稱>` 指令。
 3. 根目錄 `index.html`（應用清單）加一個連結，並更新上面的表格。
-4. **`localStorage` key 要用該應用專屬的前綴**（股票是 `tw_stock_`）：同帳號所有 Pages 共用同一個網域 `blackjackx7.github.io`，`localStorage` 也共用，key 撞名會互相覆蓋。service worker 放在各自子資料夾，scope 只涵蓋自己，不會互相干擾。
+4. **`localStorage` key 要用該應用專屬的前綴**（股票是 `tw_stock_`、匯率是 `tw_bot_rate_`）：同帳號所有 Pages 共用同一個網域 `blackjackx7.github.io`，`localStorage` 也共用，key 撞名會互相覆蓋。service worker 放在各自子資料夾，scope 只涵蓋自己，不會互相干擾。
 
 ## 設計決策
 
@@ -32,6 +33,7 @@
 - **`route/` 不用 Tailwind**：`sync.js` 的 `APPS` 以 `tailwind: false` 略過 Tailwind 步驟，改在 `cdn` 清單把 Leaflet、SheetJS 的 CDN 連結換成 `vendor/` 內的檔案；Leaflet 圖層切換鈕的圖示放在 `images/`。`localStorage` key 前綴是 `route_`。
 - **`route/` 的地圖圖磚**：圖磚在 `sw.js` 另開 `route-tiles` 快取（換版不清掉），上限 300 張、超過刪最舊的；沒看過的區域離線時沒有底圖，路徑規劃與完成標記不受影響。圖磚來源要新增網域時，同步改 `sw.js` 的 `TILE_HOSTS`。
 - **`elements/` 是 build 產物，不是 sync 產生的**：來源是上游 SeanWong17/Future-Style-Periodic-Table 的繁體中文 fork（原始碼不在本 repo），更新流程是改來源 → 在來源專案 `npm run check` → 把 `dist/` 整個複製到 `elements/`（含 `img/`，約 7 MB；實物圖已用 sharp 縮到最長邊 800 px 並壓縮，原圖不在本 repo）→ commit。`npm run build` 結尾會跑 `scripts/generate-sw.mjs` 產生 `dist/sw.js`：安裝時只預先快取程式、樣式、圖示與 manifest（BUILD 依內容雜湊），`img/` 看過才存進獨立的 `elements-img-v1` 快取、最多 60 張、超過刪最舊的（圖片內容改了要換這個名稱）。manifest、圖示放在來源的 `public/`。`elements/LICENSE` 是上游 MIT 授權，要保留。兩個圖片 `<img>`（`#element-image`、`#bohr-image`）**不可加 `loading="lazy"`**：它們在 `display:none` 容器裡，瀏覽器不會載入，而程式要等 `onload` 才顯示容器，會死結並一律「載入超時」（上游原本就有此 bug）。61 號鉕的實物圖上游已 404，手動找的替代圖授權不明，所以 `elements.json` 的 61 號 `image` 設為 `null`（UI 會停用「載入實物圖片」按鈕）；找到授權明確的圖才補回（放 `public/img/real/061-pm.<ext>` 並填 `image` 與正確的 `attribution`）。
+- **`fx/` 的服務與快取**：流程同 `stock/`（Tailwind 預建、Font Awesome 放 `vendor/`、Google 字型執行期快取）；匯率 API（`open.er-api.com`）不快取。來源的 Lucide 未被使用，已從來源移除。深淺色 key 是 `tw_bot_rate_theme`（舊的通用 `theme` 只讀不寫）。
 - **公開 repo 不放測試資料**：`route/` 只放程式與圖示，測試用的清單不進版控。
 - 所有路徑都用相對路徑，因為 Pages 網址帶 repo 名稱與子資料夾路徑。
 - 資料存在各瀏覽器 `localStorage`，依網域（不含路徑）區分：改 repo 名稱或搬子資料夾時網域不變、桌面瀏覽器資料還在，但已安裝到主畫面的圖示會因路徑變了而失效，要重新安裝；iOS 主畫面 app 的資料與 Safari 分頁分開，搬家前先匯出備份。
